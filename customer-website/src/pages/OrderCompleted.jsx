@@ -233,45 +233,52 @@ const TotalRow = ({ label, value, strong }) => (
 );
 
 /* ================= FIXED INVOICE PDF ================= */
+/* ================= MODERN PDF INVOICE ================= */
 function InvoicePDF() {
+    const guestNumber = "GST-2026-0045"; // Example guest/customer number
+
     return (
         <div
             style={{
                 width: "210mm",
                 minHeight: "297mm",
-                padding: "10mm 15mm", boxSizing: "border-box",
-                backgroundColor: "#ffffff",
-                color: "#000000",
-                fontFamily: "sans-serif",
+                padding: "15mm",
+                boxSizing: "border-box",
+                backgroundColor: "#fff",
+                color: "#3a2416",
+                fontFamily: "'Inter', sans-serif",
                 fontSize: "12px",
-                lineHeight: 1.5,
+                lineHeight: 1.6,
             }}
         >
             {/* HEADER */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <img src="Logo_Marvel.png" alt="Milky Bakery Logo" style={{ width: "64px", height: "64px", objectFit: "contain" }} crossOrigin="anonymous" />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <img src="Logo_Marvel.png" alt="Milky Bakery Logo" style={{ width: "60px", height: "60px", objectFit: "contain" }} crossOrigin="anonymous" />
                     <div>
-                        <h1 style={{ fontSize: "24px", fontWeight: "bold", margin: 0 }}>Milky Bakery</h1>
-                        <p style={{ fontSize: "12px", color: "#555", margin: 0 }}>Freshly made Chikki & Bakery Products</p>
+                        <h1 style={{ fontSize: "20px", fontWeight: "700", margin: 0 }}>Milky Bakery</h1>
+                        <p style={{ fontSize: "10px", color: "#6b3f26", margin: 0 }}>Freshly made Chikki & Bakery Products</p>
                     </div>
                 </div>
-                <h2 style={{ fontSize: "28px", fontWeight: "bold", color: "#0080c6", borderBottom: "4px solid #0080c6", paddingBottom: "4px", margin: 0 }}>
-                    INVOICE
-                </h2>
+                <div style={{ textAlign: "right" }}>
+                    <h2 style={{ fontSize: "26px", fontWeight: "700", color: "#c63b2f", margin: 0 }}>INVOICE</h2>
+                    <p style={{ fontSize: "10px", color: "#6b3f26", margin: "4px 0 0 0" }}>Invoice No: {pdfInvoiceNumber}</p>
+                    <p style={{ fontSize: "10px", color: "#6b3f26", margin: "2px 0 0 0" }}>Date: {pdfInvoiceDate}</p>
+                    <p style={{ fontSize: "10px", color: "#6b3f26", margin: "2px 0 0 0" }}>Guest No: {guestNumber}</p>
+                </div>
             </div>
 
-            {/* BILL INFO */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
+            {/* BILL TO / FROM */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "25px" }}>
                 <div>
-                    <p style={{ fontWeight: "bold", marginBottom: "4px" }}>Bill From:</p>
+                    <p style={{ fontWeight: "600", marginBottom: "4px" }}>Bill From:</p>
                     <p>Milky Bakery</p>
                     <p>123 Sweet Street</p>
                     <p>Zip 400001, India</p>
                     <p>+91 9876543210</p>
                 </div>
                 <div>
-                    <p style={{ fontWeight: "bold", marginBottom: "4px" }}>Bill To:</p>
+                    <p style={{ fontWeight: "600", marginBottom: "4px" }}>Bill To:</p>
                     <p>Customer Name</p>
                     <p>456 Candy Lane</p>
                     <p>Zip 400002, India</p>
@@ -279,54 +286,55 @@ function InvoicePDF() {
                 </div>
             </div>
 
-            {/* INVOICE META */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
-                <p><strong>Invoice Number:</strong> {pdfInvoiceNumber}</p>
-                <p><strong>Date:</strong> {pdfInvoiceDate}</p>
-            </div>
-
             {/* ITEMS TABLE */}
             <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
-                <thead style={{ backgroundColor: "#0080c6", color: "#000" }}>
+                <thead style={{ backgroundColor: "#f2b705", color: "#3a2416", textAlign: "left" }}>
                     <tr>
-                        <th style={{ border: "1px solid #ccc", padding: "6px", textAlign: "left" }}>Item</th>
-                        <th style={{ border: "1px solid #ccc", padding: "6px", textAlign: "center" }}>Quantity</th>
-                        <th style={{ border: "1px solid #ccc", padding: "6px", textAlign: "center" }}>Rate</th>
-                        <th style={{ border: "1px solid #ccc", padding: "6px", textAlign: "center" }}>Tax</th>
-                        <th style={{ border: "1px solid #ccc", padding: "6px", textAlign: "right" }}>Amount</th>
+                        <th style={{ border: "1px solid #ccc", padding: "8px" }}>Product</th>
+                        <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>Qty</th>
+                        <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>Rate</th>
+                        <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>Tax</th>
+                        <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "right" }}>Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     {pdfOrderItems.map((item, idx) => (
                         <tr key={idx}>
-                            <td style={{ border: "1px solid #ccc", padding: "6px" }}>{item.title}<br /><span style={{ fontSize: "10px", color: "#555" }}>per {item.unit}</span></td>
-                            <td style={{ border: "1px solid #ccc", padding: "6px", textAlign: "center" }}>{item.quantity}</td>
-                            <td style={{ border: "1px solid #ccc", padding: "6px", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
-                            <td style={{ border: "1px solid #ccc", padding: "6px", textAlign: "center" }}>₹0.00</td>
-                            <td style={{ border: "1px solid #ccc", padding: "6px", textAlign: "right" }}>₹{item.amount.toFixed(2)}</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                                {item.title}<br />
+                                <span style={{ fontSize: "10px", color: "#6b3f26" }}>per {item.unit}</span>
+                            </td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>{item.quantity}</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "center" }}>₹0.00</td>
+                            <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "right" }}>₹{item.amount.toFixed(2)}</td>
                         </tr>
                     ))}
                 </tbody>
             </table>
 
             {/* TOTALS */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
-                <div style={{ width: "200px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Subtotal:</span><span>₹{pdfSubtotal.toFixed(2)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Discount:</span><span>₹{pdfDiscount.toFixed(2)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Tax:</span><span>₹{pdfTax.toFixed(2)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", color: "#0080c6", marginTop: "4px" }}><span>Total Paid:</span><span>₹{pdfTotal.toFixed(2)}</span></div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "25px" }}>
+                <div style={{ width: "220px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}><span>Subtotal:</span><span>₹{pdfSubtotal.toFixed(2)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}><span>Discount:</span><span>₹{pdfDiscount.toFixed(2)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}><span>Tax:</span><span>₹{pdfTax.toFixed(2)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "700", color: "#c63b2f", fontSize: "14px", marginTop: "6px" }}>
+                        <span>Total Paid:</span><span>₹{pdfTotal.toFixed(2)}</span>
+                    </div>
                 </div>
             </div>
 
             {/* TERMS */}
-            <div style={{ marginTop: "20px" }}>
-                <p style={{ fontWeight: "bold", marginBottom: "4px" }}>Terms & Conditions:</p>
-                <p style={{ fontStyle: "italic", color: "#555" }}>Thank you for shopping with Milky Bakery. All chikki products are freshly made with premium ingredients.</p>
+            <div style={{ marginBottom: "25px" }}>
+                <p style={{ fontWeight: "600", marginBottom: "4px" }}>Terms & Conditions:</p>
+                <p style={{ fontSize: "10px", color: "#6b3f26", fontStyle: "italic" }}>
+                    Thank you for shopping with Milky Bakery. All chikki products are freshly made with premium ingredients.
+                </p>
             </div>
 
             {/* FOOTER */}
-            <div style={{ marginTop: "40px", textAlign: "center", fontSize: "10px", color: "#555" }}>
+            <div style={{ textAlign: "center", fontSize: "10px", color: "#6b3f26" }}>
                 <p>Milky Bakery | www.milkybakery.com | +91 9876543210</p>
                 <p>Powered by Sweet Website</p>
             </div>

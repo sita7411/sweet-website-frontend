@@ -1,0 +1,23 @@
+.nav-link {
+  @apply relative hover:text-red-600 transition;
+}
+
+.account-item {
+  @apply flex items-center gap-2 px-4 py-2 rounded-lg text-sm
+         hover:bg-gray-100 w-full;
+}
+
+.animate-dropdown {
+  animation: dropdown 0.25s ease-out;
+}
+
+@keyframes dropdown {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

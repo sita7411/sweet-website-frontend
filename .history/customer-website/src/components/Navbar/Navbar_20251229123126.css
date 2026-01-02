@@ -1,0 +1,108 @@
+/* LINKS */
+.nav-link {
+  position: relative;
+  transition: color 0.3s;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 0;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s;
+}
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* ICON BUTTON */
+.icon-btn {
+  position: relative;
+  padding: 12px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--secondary);
+  box-shadow: 0 8px 20px rgba(107,63,38,0.15);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.icon-btn:hover {
+  background: var(--bg-soft);
+  color: var(--primary);
+}
+
+/* CART BADGE */
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* DROPDOWN ITEMS */
+.dropdown-item {
+  padding: 18px;
+  border-radius: 14px;
+  transition: background 0.3s;
+}
+.dropdown-item:hover {
+  background: var(--bg-soft);
+}
+.dropdown-item h4 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.dropdown-item p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ACCOUNT */
+.account-btn {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  font-size: 14px;
+}
+
+.account-dropdown {
+  position: absolute;
+  right: 0;
+  margin-top: 12px;
+  width: 200px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+}
+
+.account-item {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.account-item:hover {
+  background: var(--bg-soft);
+}
+
+.logout-btn {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--primary);
+  width: 100%;
+}

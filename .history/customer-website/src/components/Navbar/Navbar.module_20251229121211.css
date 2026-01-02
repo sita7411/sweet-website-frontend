@@ -1,0 +1,144 @@
+:root {
+  --primary: #b43b2f;
+  --secondary: #7a4a2d;
+}
+
+/* Glass Navbar */
+.navbar-glass {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 248, 240, 0.75);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+/* Container */
+.navbar-container {
+  max-width: 1320px;
+  margin: auto;
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+/* Logo */
+.navbar-logo img {
+  height: 54px;
+}
+
+/* Desktop Menu */
+.navbar-menu {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+}
+
+.nav-link {
+  position: relative;
+  font-weight: 500;
+  color: var(--secondary);
+  transition: color 0.3s ease;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 0;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--primary);
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Icons */
+.navbar-icons {
+  display: flex;
+  gap: 12px;
+}
+
+.icon-btn {
+  background: white;
+  border-radius: 50%;
+  padding: 10px;
+  color: var(--secondary);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  transition: all 0.25s ease;
+}
+
+.icon-btn:hover {
+  color: var(--primary);
+  transform: translateY(-2px) scale(1.05);
+}
+
+/* Cart Badge */
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--primary);
+  color: white;
+  font-size: 11px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile Drawer */
+.mobile-drawer {
+  max-height: 0;
+  overflow: hidden;
+  background: white;
+  margin: 0 16px;
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+.mobile-drawer a {
+  display: block;
+  padding: 18px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--secondary);
+  border-bottom: 1px solid #f3f3f3;
+}
+
+.mobile-drawer a:hover {
+  background: #fff4e6;
+  color: var(--primary);
+}
+
+.mobile-drawer.open {
+  max-height: 400px;
+  opacity: 1;
+}
+
+/* Responsive */
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .navbar-menu {
+    display: none;
+  }
+
+  .mobile-only {
+    display: inline-flex;
+  }
+}

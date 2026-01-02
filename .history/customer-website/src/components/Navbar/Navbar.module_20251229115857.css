@@ -1,0 +1,60 @@
+/* Custom animations jo Tailwind mein nahi hain */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseSlow {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.9; }
+}
+
+@keyframes shine {
+  0% { transform: translateX(-150%) skewX(-12deg); }
+  100% { transform: translateX(150%) skewX(-12deg); }
+}
+
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.pulseSlow {
+  animation: pulseSlow 2s ease-in-out infinite;
+}
+
+.menuItem {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 8px 16px;
+}
+
+.menuBackground {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #c4453680, #a52a2a90);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s ease;
+}
+
+.menuItem:hover .menuBackground {
+  transform: scaleX(1);
+}
+
+.shineEffect {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+  transform: translateX(-150%) skewX(-12deg);
+  transition: none;
+}
+
+.menuItem:hover .shineEffect {
+  animation: shine 0.7s ease-out forwards;
+}
+
+.cartBadge {
+  background: linear-gradient(to bottom right, #d94536, #c42b1c);
+  box-shadow: 0 4px 10px rgba(201, 69, 54, 0.3);
+}

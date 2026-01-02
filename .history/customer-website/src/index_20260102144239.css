@@ -1,0 +1,104 @@
+/* ================= THEME VARIABLES ================= */
+:root {
+  --primary: #c63b2f;
+  --secondary: #6b3f26;
+  --bg-main: #fffaf3;
+  --bg-soft: #fff1db;
+  --bg-card: #ffffff;
+  --text-main: #3a2416;
+  --text-muted: #8a6a52;
+  --accent: #f2b705;
+}
+
+/* ================= GLOBAL STYLES ================= */
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--secondary);
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease-in-out;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(198, 59, 47, 0.2);
+}
+
+button {
+  background-color: var(--secondary);
+  color: white;
+  font-weight: 600;
+  border-radius: 1rem;
+  padding: 0.75rem 1.25rem;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(198, 59, 47, 0.3);
+}
+
+label {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+select {
+  appearance: none;
+  position: relative;
+}
+
+.payment-card {
+  border: 2px solid var(--secondary);
+  border-radius: 1rem;
+  padding: 1rem;
+  background-color: var(--bg-card);
+  transition: all 0.2s;
+}
+
+.payment-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(198, 59, 47, 0.2);
+}
+
+.payment-card input[type="radio"] {
+  accent-color: var(--secondary);
+}
+
+/* Sticky Order Summary Card */
+.order-summary {
+  background-color: var(--bg-card);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Features section */
+.features-section {
+  background-color: var(--bg-soft);
+}
+
+/* Typography */
+h2, h3, h4 {
+  color: var(--text-main);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-accent {
+  color: var(--accent);
+}

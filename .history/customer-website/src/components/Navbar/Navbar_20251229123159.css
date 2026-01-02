@@ -1,0 +1,33 @@
+:root {
+  /* BRAND */
+  --primary: #c63b2f;        /* Crunch Red */
+  --secondary: #6b3f26;      /* Peanut Brown */
+
+  /* BACKGROUNDS */
+  --bg-main: #fffaf3;        /* Cream */
+  --bg-soft: #fff1db;        /* Soft peanut */
+  --bg-card: #ffffff;
+
+  /* TEXT */
+  --text-main: #3a2416;      /* Jaggery brown */
+  --text-muted: #8a6a52;
+
+  /* ACCENT */
+  --accent: #f2b705;         /* Logo yellow */
+}
+
+/* DROPDOWN ANIMATION */
+.animate-dropdown {
+  animation: dropdown 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdown {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

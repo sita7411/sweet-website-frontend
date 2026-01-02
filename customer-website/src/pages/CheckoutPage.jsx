@@ -99,16 +99,21 @@ export default function CheckoutPage() {
     setTimeout(() => {
       setLoading(false);
       toast.success("Order placed successfully!");
+
+      // Redirect to Order Complete page after 1 second
+      setTimeout(() => {
+        navigate("/ordercomplete");
+      }, 1000);
     }, 2000);
   };
 
   // Mask card number for preview
   const maskedCardNumber = form.cardNumber
     ? form.cardNumber
-        .replace(/\D/g, "")
-        .padEnd(16, "•")
-        .replace(/(.{4})/g, "$1 ")
-        .trim()
+      .replace(/\D/g, "")
+      .padEnd(16, "•")
+      .replace(/(.{4})/g, "$1 ")
+      .trim()
     : "•••• •••• •••• ••••";
 
   const maskedCVV = form.cvv ? form.cvv.replace(/\d/g, "•") : "•••";
@@ -285,7 +290,7 @@ export default function CheckoutPage() {
                 {/* CARD PREVIEW */}
                 {payment === "card" && (
                   <div className="mt-6 space-y-5">
-                  
+
 
                     <Input
                       label="Cardholder Name"

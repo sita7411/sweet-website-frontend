@@ -1,0 +1,14 @@
+:root {
+  --primary: #c63b2f;
+  --secondary: #6b3f26;
+  --bg-main: #fffaf3;
+  --bg-soft: #fff1db;
+  --bg-card: #ffffff;
+  --text-main: #3a2416;
+  --text-muted: #8a6a52;
+  --accent: #f2b705;
+}
+
+.dropdown-shadow {
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}

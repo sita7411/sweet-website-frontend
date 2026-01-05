@@ -16,7 +16,7 @@ export default function Footer() {
     ];
 
     const accountLinks = [
-        { title: "My Account", link: "/account" },
+        { title: "My Account", link: "/myaccount" },
         { title: "Contact", link: "/contact" },
         { title: "Shopping Cart", link: "/cart" },
         { title: "My Orders", link: "/myorder" },

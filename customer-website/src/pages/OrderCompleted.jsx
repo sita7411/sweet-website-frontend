@@ -254,187 +254,183 @@ function InvoicePDF() {
                 color: "#2e2e2e",
                 display: "flex",
                 flexDirection: "column",
+                justifyContent: "space-between", // ensures footer stays at bottom
             }}
         >
-            {/* ===== HEADER ===== */}
-            <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderBottom: "2px solid #c63b2f",
-                paddingBottom: "12px",
-                marginBottom: "20px",
-            }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                    <img
-                        src="Logo_Marvel.png"
-                        alt="Marvel Crunch"
-                        crossOrigin="anonymous"
-                        style={{ width: "70px", height: "70px", objectFit: "contain" }}
-                    />
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>
-                            Marvel Crunch Chikki
-                        </h1>
-                        <p style={{ margin: 0, fontSize: "10px", color: "#6b3f26" }}>
-                            Premium Fresh Chikki & Bakery Products
+            {/* ===== CONTENT ===== */}
+            <div>
+                {/* ===== HEADER ===== */}
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderBottom: "2px solid #c63b2f",
+                        paddingBottom: "12px",
+                        marginBottom: "20px",
+                    }}
+                >
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                        <img
+                            src="Logo_Marvel.png"
+                            alt="Marvel Crunch"
+                            crossOrigin="anonymous"
+                            style={{ width: "70px", height: "70px", objectFit: "contain" }}
+                        />
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>
+                                Marvel Crunch Chikki
+                            </h1>
+                            <p style={{ margin: 0, fontSize: "10px", color: "#6b3f26" }}>
+                                Premium Fresh Chikki & Bakery Products
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                        <h2
+                            style={{
+                                margin: 0,
+                                fontSize: "26px",
+                                fontWeight: "700",
+                                color: "#c63b2f",
+                                letterSpacing: "1px",
+                            }}
+                        >
+                            INVOICE
+                        </h2>
+                        <p style={{ margin: "4px 0 0", fontSize: "10px" }}>
+                            Invoice No: <strong>{pdfInvoiceNumber}</strong>
                         </p>
+                        <p style={{ margin: "2px 0", fontSize: "10px" }}>Date: {pdfInvoiceDate}</p>
+                        <p style={{ margin: "2px 0", fontSize: "10px" }}>Guest No: {guestNumber}</p>
                     </div>
                 </div>
 
-                <div style={{ textAlign: "right" }}>
-                    <h2 style={{
-                        margin: 0,
-                        fontSize: "26px",
-                        fontWeight: "700",
-                        color: "#c63b2f",
-                        letterSpacing: "1px",
-                    }}>
-                        INVOICE
-                    </h2>
-                    <p style={{ margin: "4px 0 0", fontSize: "10px" }}>
-                        Invoice No: <strong>{pdfInvoiceNumber}</strong>
-                    </p>
-                    <p style={{ margin: "2px 0", fontSize: "10px" }}>
-                        Date: {pdfInvoiceDate}
-                    </p>
-                    <p style={{ margin: "2px 0", fontSize: "10px" }}>
-                        Guest No: {guestNumber}
-                    </p>
-                </div>
-            </div>
+                {/* ===== BILLING ===== */}
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "22px",
+                    }}
+                >
+                    <div style={{ width: "48%" }}>
+                        <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill From</p>
+                        <p style={{ margin: 0 }}>Marvel Crunch Chikki</p>
+                        <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4" }}>
+                            Plot No. 133, Shreeji Textile
+                            <br />
+                            Velenja Sayan Road, Gujarat – 394150
+                        </p>
+                        <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 99461 37919</p>
+                    </div>
 
-            {/* ===== BILLING ===== */}
-            <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "22px",
-            }}>
-                <div style={{ width: "48%" }}>
-                    <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill From</p>
-                    <p style={{ margin: 0 }}>Marvel Crunch Chikki</p>
-                    <p style={{ margin: 0, fontSize: "11px" }}>
-                        Plot No. 133, Shreeji Textile<br />
-                        Velenja Sayan Road, Gujarat – 394150
-                    </p>
-                    <p style={{ margin: "4px 0 0", fontSize: "11px" }}>
-                        +91 99461 37919
-                    </p>
+                    <div style={{ width: "48%", textAlign: "right" }}>
+                        <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill To</p>
+                        <p style={{ margin: 0 }}>Customer Name</p>
+                        <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4" }}>
+                            456 Candy Lane
+                            <br />
+                            Mumbai – 400002
+                        </p>
+                        <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 91234 56780</p>
+                    </div>
                 </div>
 
-                <div style={{ width: "48%", textAlign: "right" }}>
-                    <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill To</p>
-                    <p style={{ margin: 0 }}>Customer Name</p>
-                    <p style={{ margin: 0, fontSize: "11px" }}>
-                        456 Candy Lane<br />
-                        Mumbai – 400002
-                    </p>
-                    <p style={{ margin: "4px 0 0", fontSize: "11px" }}>
-                        +91 91234 56780
-                    </p>
-                </div>
-            </div>
-
-            {/* ===== ITEMS TABLE ===== */}
-            <table
-                style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    marginBottom: "18px",
-                }}
-            >
-                <thead>
-                    <tr style={{ backgroundColor: "#f7f7f7" }}>
-                        {["Product", "Qty", "Rate", "Shipping", "Amount"].map(h => (
-                            <th
-                                key={h}
-                                style={{
-                                    border: "1px solid #ddd",
-                                    padding: "8px",
-                                    fontSize: "11px",
-                                    textAlign: h === "Product" ? "left" : "center",
-                                }}
-                            >
-                                {h}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {pdfOrderItems.map((item, idx) => (
-                        <tr key={idx}>
-                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                <strong>{item.title}</strong>
-                                <div style={{ fontSize: "10px", color: "#777" }}>
-                                    per {item.unit}
-                                </div>
-                            </td>
-                            <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
-                                {item.quantity}
-                            </td>
-                            <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
-                                ₹{item.rate.toFixed(2)}
-                            </td>
-                            <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
-                                ₹0.00
-                            </td>
-                            <td style={{
-                                border: "1px solid #ddd",
-                                textAlign: "right",
-                                paddingRight: "10px",
-                            }}>
-                                ₹{item.amount.toFixed(2)}
-                            </td>
+                {/* ===== ITEMS TABLE ===== */}
+                <table
+                    style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        marginBottom: "22px",
+                        fontSize: "11px",
+                    }}
+                >
+                    <thead>
+                        <tr style={{ backgroundColor: "#f7f7f7", fontWeight: "700" }}>
+                            {["Product", "Qty", "Rate", "Shipping", "Amount"].map((h) => (
+                                <th
+                                    key={h}
+                                    style={{
+                                        border: "1px solid #ddd",
+                                        padding: "8px",
+                                        textAlign: h === "Product" ? "left" : "center",
+                                    }}
+                                >
+                                    {h}
+                                </th>
+                            ))}
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {pdfOrderItems.map((item, idx) => (
+                            <tr key={idx} style={{ borderBottom: "1px solid #ddd" }}>
+                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                    <strong>{item.title}</strong>
+                                    <div style={{ fontSize: "10px", color: "#777" }}>per {item.unit}</div>
+                                </td>
+                                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
+                                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
+                                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹0.00</td>
+                                <td
+                                    style={{
+                                        border: "1px solid #ddd",
+                                        textAlign: "right",
+                                        paddingRight: "10px",
+                                    }}
+                                >
+                                    ₹{item.amount.toFixed(2)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
 
-            {/* ===== TOTALS ===== */}
-            <div style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginBottom: "20px",
-            }}>
-                <div style={{ width: "260px" }}>
-                    <div style={totalRowStyle}>
-                        <span>Subtotal</span>
-                        <span>₹{pdfSubtotal.toFixed(2)}</span>
-                    </div>
-                    <div style={totalRowStyle}>
-                        <span>Shipping</span>
-                        <span>₹0.00</span>
-                    </div>
-                    <div style={{
-                        ...totalRowStyle,
-                        fontWeight: "700",
-                        fontSize: "14px",
-                        borderTop: "2px solid #c63b2f",
-                        paddingTop: "6px",
-                        marginTop: "6px",
-                        color: "#c63b2f",
-                    }}>
-                        <span>Total Paid</span>
-                        <span>₹{pdfTotal.toFixed(2)}</span>
+                {/* ===== TOTALS ===== */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "22px" }}>
+                    <div style={{ width: "260px" }}>
+                        <div style={totalRowStyle}>
+                            <span>Subtotal</span>
+                            <span>₹{pdfSubtotal.toFixed(2)}</span>
+                        </div>
+                        <div style={totalRowStyle}>
+                            <span>Shipping</span>
+                            <span>₹0.00</span>
+                        </div>
+                        <div
+                            style={{
+                                ...totalRowStyle,
+                                fontWeight: "700",
+                                fontSize: "14px",
+                                borderTop: "2px solid #c63b2f",
+                                paddingTop: "6px",
+                                marginTop: "6px",
+                                color: "#c63b2f",
+                            }}
+                        >
+                            <span>Total Paid</span>
+                            <span>₹{pdfTotal.toFixed(2)}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* ===== FOOTER ===== */}
-            <div style={{
-                marginTop: "auto",
-                textAlign: "center",
-                fontSize: "10px",
-                color: "#777",
-                borderTop: "1px solid #ddd",
-                paddingTop: "10px",
-            }}>
+            <div
+                style={{
+                    textAlign: "center",
+                    fontSize: "10px",
+                    color: "#777",
+                    borderTop: "1px solid #ddd",
+                    paddingTop: "10px",
+                    marginTop: "auto", // ensures footer stays at bottom
+                }}
+            >
                 <p style={{ margin: 0 }}>
                     Marvel Crunch Chikki • www.marvelcrunch.com • +91 99461 37919
                 </p>
-                <p style={{ margin: 0 }}>
-                    Thank you for your business!
-                </p>
+                <p style={{ margin: 0 }}>Thank you for your business!</p>
             </div>
         </div>
     );

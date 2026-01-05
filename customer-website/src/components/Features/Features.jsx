@@ -22,7 +22,7 @@ const features = [
 
 export default function FeaturesSection() {
   return (
-    <section className="border-b" style={{ borderColor: "var(--bg-soft)" }}>
+    <section >
       <div className="max-w-7xl mx-auto px-4 sm:px-7">
         <div className="flex flex-col sm:flex-row flex-wrap justify-between items-start sm:items-center gap-6 sm:gap-10 py-8">
 

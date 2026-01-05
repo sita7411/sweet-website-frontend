@@ -8,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 export default function CheckoutPage() {
   const [payment, setPayment] = useState("card");
-  const [loading, setLoading] = useState(false); // Loader state
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -94,20 +94,17 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Simulate order processing
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       toast.success("Order placed successfully!");
 
-      // Redirect to Order Complete page after 1 second
       setTimeout(() => {
         navigate("/ordercomplete");
       }, 1000);
     }, 2000);
   };
 
-  // Mask card number for preview
   const maskedCardNumber = form.cardNumber
     ? form.cardNumber
       .replace(/\D/g, "")
@@ -169,7 +166,7 @@ export default function CheckoutPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-14">
         <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
           {/* LEFT: Billing & Payment */}
-          <div className="lg:col-span-2 order-2 lg:order-1">
+          <div className="lg:col-span-2 order-1 lg:order-1">
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-4">
               <h2 className="text-2xl font-bold text-gray-800">Billing Details</h2>
 
@@ -354,7 +351,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* RIGHT: Order Summary */}
-          <div className="order-1 lg:order-2 lg:col-span-1">
+          <div className="lg:col-span-1 order-2 lg:order-2">
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 sticky top-6">
               <h2 className="text-2xl font-bold mb-4">Order Summary</h2>
               <div className="border-t border-gray-300 pt-4 space-y-3">

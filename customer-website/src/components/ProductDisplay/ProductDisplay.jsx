@@ -7,16 +7,24 @@ const product = {
   title: "Crunchy Peanut Chikki",
   rating: 4.8,
   reviews: 245,
-  price: 75.0,
-  originalPrice: 150.0,
+  weights: ["200g", "500g", "1kg"],
+  prices: {
+    "200g": 75.0,
+    "500g": 150.0,
+    "1kg": 280.0,
+  },
+  originalPrices: {
+    "200g": 150.0,
+    "500g": 300.0,
+    "1kg": 560.0,
+  },
   description:
     "Delicious crunchy peanut chikki made with premium jaggery and peanuts. Perfect snack for anytime. Enjoy the authentic homemade taste in every bite.",
-  weights: ["200g", "500g", "1kg"],
   images: [
     "/pista.png",
     "/stwabarry_chikki.png",
     "/pinepal_chikki.png",
-    "/images/chikki4.png",
+    "/dana_ladu.png",
   ],
   sku: "CHIKKI001",
   tags: ["Chikki", "Snack", "Sweet"],
@@ -30,6 +38,13 @@ export default function ProductDisplay() {
   const [selectedWeight, setSelectedWeight] = useState(product.weights[0]);
   const [quantity, setQuantity] = useState(1);
   const [wishlistFilled, setWishlistFilled] = useState(false);
+
+  // Calculate OFF %
+  const discount = Math.round(
+    ((product.originalPrices[selectedWeight] - product.prices[selectedWeight]) /
+      product.originalPrices[selectedWeight]) *
+      100
+  );
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 p-4 lg:p-8">
@@ -75,13 +90,16 @@ export default function ProductDisplay() {
           </span>
         </div>
 
-        {/* Price */}
+        {/* Price with OFF */}
         <div className="flex items-center -mt-1 gap-3 sm:gap-4">
           <span className="text-xl sm:text-2xl font-bold text-[var(--primary)]">
-            ₹{product.price}
+            ₹{product.prices[selectedWeight] * quantity}
           </span>
           <span className="line-through text-[var(--text-muted)] text-sm sm:text-base">
-            ₹{product.originalPrice}
+            ₹{product.originalPrices[selectedWeight] * quantity}
+          </span>
+          <span className="text-[var(--accent)] font-semibold text-sm sm:text-base">
+            {discount}% OFF
           </span>
         </div>
 

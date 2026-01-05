@@ -12,7 +12,7 @@ export default function Breadcrumbs({ product, separator = "/" }) {
 
   return (
     <nav
-      className="text-sm sm:text-base font-medium ml-5 "
+      className="text-sm sm:text-base font-medium ml-6"
       aria-label="Breadcrumb"
     >
       <ol className="inline-flex items-center space-x-2">

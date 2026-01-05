@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import Breadcrumbs from "../components/Breadcrumbs/Breadcrumbs";
 import ProductDisplay from "../components/ProductDisplay/ProductDisplay";
 // import DescriptionBox from "../components/DescriptionBox/DescriptionBox";
-// import ProductReviews from "../components/ProductReviews/ProductReviews";
+import ProductReviews from "../components/ProductReviews/ProductReviews";
 // import RelatedProducts from "../components/RelatedProducts/RelatedProducts";
 
 export default function ProductPage() {
@@ -51,13 +51,13 @@ export default function ProductPage() {
   // ===== Handle product not found =====
   if (!product)
     return (
-      <p className="text-center mt-10 text-[var(--text-muted)]">
+      <p className="text-center mt-10 text-[var(--text-muted)] ">
         Product not found
       </p>
     );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10 space-y-5">
+    <div className="max-w-7xl mx-auto px-4 py-10 space-y-5 ">
       {/* Breadcrumbs */}
       <Breadcrumbs product={product} />
 
@@ -66,7 +66,7 @@ export default function ProductPage() {
 
       {/* Optional sections */}
       {/* <DescriptionBox product={product} /> */}
-      {/* <ProductReviews product={product} /> */}
+      <ProductReviews product={product} />
       {/* <RelatedProducts product={product} /> */}
     </div>
   );

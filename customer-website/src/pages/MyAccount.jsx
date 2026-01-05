@@ -72,7 +72,7 @@ const MyAccount = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fffaf3] text-[#3a2416]">
+    <div className="min-h-screen  text-[#3a2416]">
 
       {/* HERO Section */}
       <section className="relative h-[50vh] flex items-center justify-center overflow-hidden">
@@ -99,7 +99,7 @@ const MyAccount = () => {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
+      <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-8">
 
         {/* Sidebar / Left */}
         <aside className="w-full lg:w-64 flex-shrink-0 bg-white shadow rounded-lg p-6 self-start">

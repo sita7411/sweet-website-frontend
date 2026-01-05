@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { CreditCard, Smartphone, Banknote, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Features from "../components/Features/Features";
 import { ToastContainer, toast, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function CheckoutPage() {
+  const navigate = useNavigate();
   const [payment, setPayment] = useState("card");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -100,7 +101,7 @@ export default function CheckoutPage() {
       toast.success("Order placed successfully!");
 
       setTimeout(() => {
-        navigate("/ordercomplete");
+        navigate("/ordercomplate");
       }, 1000);
     }, 2000);
   };
@@ -393,15 +394,22 @@ export default function CheckoutPage() {
 
       <ToastContainer
         position="top-right"
-        autoClose={3000}
+        autoClose={2500}
         hideProgressBar={false}
-        newestOnTop
+        newestOnTop={true}
         closeOnClick
         pauseOnFocusLoss
         draggable
         pauseOnHover
         transition={Slide}
-        theme="light"
+        toastStyle={{
+          background: 'var(--bg-soft)',
+          color: 'var(--secondary)',
+          fontWeight: 600,
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          padding: '14px 20px',
+        }}
       />
 
       {/* FEATURES SECTION */}

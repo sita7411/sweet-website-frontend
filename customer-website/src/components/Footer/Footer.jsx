@@ -8,8 +8,20 @@ export default function Footer() {
         { icon: <Twitter size={18} />, link: "#" },
     ];
 
-    const infoLinks = ["About Us", "Blog", "Check Out", "Services"];
-    const accountLinks = ["My Account", "Contact", "Shopping Cart", "Store"];
+    const infoLinks = [
+        { title: "About Us", link: "/about" },
+        { title: "Blog", link: "/blog" },
+        { title: "Check Out", link: "/checkout" },
+        { title: "Services", link: "/services" },
+    ];
+
+    const accountLinks = [
+        { title: "My Account", link: "/account" },
+        { title: "Contact", link: "/contact" },
+        { title: "Shopping Cart", link: "/cart" },
+        { title: "My Orders", link: "/myorder" },
+    ];
+
     const categoryLinks = [
         "Nuts & Ingredients",
         "Dairy Products",
@@ -40,25 +52,21 @@ export default function Footer() {
                 <div className="flex flex-col col-span-1">
                     <h4 className="font-bold text-xl mb-4">Contact Us</h4>
                     
-                    {/* Address */}
                     <div className="flex items-start gap-2 text-sm text-[var(--text-muted)] mb-2">
                         <MapPin size={18} className="mt-1 text-[var(--primary)]" />
                         <span>34 Gandhi Road, Surat, Gujarat, India</span>
                     </div>
 
-                    {/* Phone */}
                     <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
                         <Phone size={18} className="text-[var(--primary)]" />
                         <span>+91 99461 37919</span>
                     </div>
 
-                    {/* Email */}
                     <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
                         <Mail size={18} className="text-[var(--primary)]" />
                         <span>Info@MarvelCrunch.com</span>
                     </div>
 
-                    {/* Working Hours */}
                     <p className="text-sm text-[var(--text-muted)] mt-2">
                         <span className="font-semibold">Mon - Sat:</span> 8:00 am - 9:00 pm
                         <br />
@@ -71,11 +79,13 @@ export default function Footer() {
                     <h4 className="font-bold text-xl mb-4">Information</h4>
                     <ul className="space-y-2 text-sm text-[var(--text-muted)]">
                         {infoLinks.map((item, i) => (
-                            <li
-                                key={i}
-                                className="hover:text-[var(--primary)] cursor-pointer transition-colors duration-300"
-                            >
-                                {item}
+                            <li key={i}>
+                                <a
+                                    href={item.link}
+                                    className="hover:text-[var(--primary)] transition-colors duration-300"
+                                >
+                                    {item.title}
+                                </a>
                             </li>
                         ))}
                     </ul>
@@ -86,11 +96,13 @@ export default function Footer() {
                     <h4 className="font-bold text-xl mb-4">My Account</h4>
                     <ul className="space-y-2 text-sm text-[var(--text-muted)]">
                         {accountLinks.map((item, i) => (
-                            <li
-                                key={i}
-                                className="hover:text-[var(--primary)] cursor-pointer transition-colors duration-300"
-                            >
-                                {item}
+                            <li key={i}>
+                                <a
+                                    href={item.link}
+                                    className="hover:text-[var(--primary)] transition-colors duration-300"
+                                >
+                                    {item.title}
+                                </a>
                             </li>
                         ))}
                     </ul>

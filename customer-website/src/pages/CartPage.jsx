@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast, ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Link } from 'react-router-dom';
 import Features from "../components/Features/Features";
+import { Link, useNavigate } from 'react-router-dom';
 
 const initialCart = [
     {
@@ -42,6 +42,7 @@ const initialCart = [
 const CartPage = () => {
     const [cart, setCart] = useState(initialCart);
     const [isProcessing, setIsProcessing] = useState(false);
+    const navigate = useNavigate();
 
     // Handlers
     const handleQuantityChange = (id, value) => {
@@ -71,9 +72,10 @@ const CartPage = () => {
 
         setTimeout(() => {
             setIsProcessing(false);
-            setCart([]);
-        }, 2000);
+            navigate('/checkout', { state: { cart: inStockItems } });
+        }, 1000);
     };
+
 
     const subtotal = cart.reduce(
         (acc, item) => (item.stock === 'In stock' ? acc + item.price * item.quantity : acc),
@@ -219,8 +221,8 @@ const CartPage = () => {
                                             <div className="flex gap-3">
                                                 <button
                                                     className={`flex-1 py-1.5 rounded font-semibold text-white text-sm transition ${item.stock === 'In stock'
-                                                            ? 'bg-[var(--secondary)] hover:bg-[var(--primary)]'
-                                                            : 'bg-gray-400 cursor-not-allowed'
+                                                        ? 'bg-[var(--secondary)] hover:bg-[var(--primary)]'
+                                                        : 'bg-gray-400 cursor-not-allowed'
                                                         }`}
                                                     disabled={item.stock !== 'In stock'}
                                                 >
@@ -309,8 +311,8 @@ const CartPage = () => {
                                                 <td className="py-4 px-6 flex gap-2">
                                                     <button
                                                         className={`px-4 py-1.5 rounded text-white text-sm font-semibold transition ${item.stock === 'In stock'
-                                                                ? 'bg-[var(--secondary)] hover:bg-[var(--primary)]'
-                                                                : 'bg-gray-400 cursor-not-allowed'
+                                                            ? 'bg-[var(--secondary)] hover:bg-[var(--primary)]'
+                                                            : 'bg-gray-400 cursor-not-allowed'
                                                             }`}
                                                         disabled={item.stock !== 'In stock'}
                                                     >
@@ -371,8 +373,8 @@ const CartPage = () => {
                                     isProcessing || cart.filter((item) => item.stock === 'In stock').length === 0
                                 }
                                 className={`w-full py-3 rounded font-semibold transition text-white text-[18px] ${isProcessing
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-[var(--primary)] hover:bg-[var(--secondary)]'
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-[var(--primary)] hover:bg-[var(--secondary)]'
                                     }`}
                             >
                                 {isProcessing ? 'Processing...' : 'Proceed to Checkout'}

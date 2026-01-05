@@ -272,7 +272,7 @@ export default function OrdersPage() {
     <div className="min-h-screen">
       {/* HERO */}
       <section className="relative h-[50vh] flex items-center justify-center overflow-hidden">
-        <img src="/chikki-banner.png" alt="Chikki Banner" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="/login.png" alt="Chikki Banner" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-[var(--secondary)]/30"></div>
         <div className="relative z-10 text-center px-4">
           <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">

@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./Layout";
 import Home from "./pages/Home";
-import ProductPage from "./pages/ProductPage";
+import Shop from "./pages/Shop";
 import AuthPage from "./pages/AuthPage";
 import Wishlist from "./pages/Wishlist";
 import CartPage from "./pages/CartPage";
@@ -16,7 +16,7 @@ function App() {
         {/* Pages that use Navbar/Footer */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/products" element={<ProductPage />} />
+          <Route path="/shop" element={<Shop />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />

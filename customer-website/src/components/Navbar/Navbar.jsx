@@ -90,7 +90,7 @@ export default function Navbar() {
         {/* DESKTOP LINKS */}
         <nav className="hidden lg:flex gap-8 text-sm font-semibold uppercase">
           <NavLink href="/">Home</NavLink>
-          <NavLink href="/products">Products</NavLink>
+          <NavLink href="/shop">Products</NavLink>
           <NavLink href="/offers">Offers</NavLink>
           <NavLink href="/about">Our Story</NavLink>
           <NavLink href="/contact">Contact</NavLink>
@@ -183,7 +183,7 @@ export default function Navbar() {
               </div>
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
                 <NavLink href="/" mobile>Home</NavLink>
-                <NavLink href="/products" mobile>Products</NavLink>
+                <NavLink href="/shop" mobile>Products</NavLink>
                 <NavLink href="/collections" mobile>Collections</NavLink>
                 <NavLink href="/offers" mobile>Offers</NavLink>
                 <NavLink href="/about" mobile>Our Story</NavLink>

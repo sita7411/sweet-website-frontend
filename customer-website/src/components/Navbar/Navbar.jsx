@@ -91,7 +91,6 @@ export default function Navbar() {
         <nav className="hidden lg:flex gap-8 text-sm font-semibold uppercase">
           <NavLink href="/">Home</NavLink>
           <NavLink href="/shop">Products</NavLink>
-          <NavLink href="/offers">Offers</NavLink>
           <NavLink href="/about">Our Story</NavLink>
           <NavLink href="/contact">Contact</NavLink>
         </nav>

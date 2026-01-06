@@ -11,6 +11,7 @@ import MyOrders from "./pages/MyOrders";
 import ProductPage from "./pages/ProductPage";
 import MyAccount from "./pages/MyAccount";
 import ContactUs from "./components/ContactUs/ContactUs";
+import OurStory from "./pages/OurStory";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/product/:productId" element={<ProductPage />} />
           <Route path="/myaccount" element={<MyAccount />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/about" element={<OurStory />} />
 
         </Route>
 

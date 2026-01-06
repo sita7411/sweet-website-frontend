@@ -1,8 +1,9 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
+import { Star, UploadCloud, X, AlertCircle } from "lucide-react";
 
 /* ================= ORDERS DATA ================= */
 const orders = [
@@ -68,7 +69,7 @@ const downloadInvoice = async (order) => {
   element.style.display = "none";
 };
 
-/* ================== INVOICE COMPONENT (अब OrderCompleted जैसा ही) ================== */
+/* ================== INVOICE COMPONENT ================== */
 function InvoicePDF({ order }) {
   const guestNumber = "GST-2026-0045";
   const pdfInvoiceDate = order.deliveredDate || order.estimatedDelivery;
@@ -110,9 +111,7 @@ function InvoicePDF({ order }) {
         boxSizing: "border-box",
       }}
     >
-      {/* =============== MAIN CONTENT (flex: 1) =============== */}
       <div style={{ flex: 1 }}>
-        {/* HEADER */}
         <div style={{
           display: "flex",
           justifyContent: "space-between",
@@ -155,7 +154,6 @@ function InvoicePDF({ order }) {
           </div>
         </div>
 
-        {/* BILLING */}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "22px" }}>
           <div style={{ width: "48%" }}>
             <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill From</p>
@@ -177,7 +175,6 @@ function InvoicePDF({ order }) {
           </div>
         </div>
 
-        {/* ITEMS TABLE */}
         <table style={{
           width: "100%",
           borderCollapse: "collapse",
@@ -218,7 +215,6 @@ function InvoicePDF({ order }) {
           </tbody>
         </table>
 
-        {/* TOTALS */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <div style={{ width: "260px" }}>
             <div style={totalRowStyle}>
@@ -245,7 +241,6 @@ function InvoicePDF({ order }) {
         </div>
       </div>
 
-      {/* =============== FOOTER  =============== */}
       <div style={{
         position: "absolute",
         bottom: "18mm",
@@ -266,8 +261,229 @@ function InvoicePDF({ order }) {
   );
 }
 
+/* ================== REVIEW MODAL ================== */
+function ReviewModal({ order, isOpen, onClose }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    rating: 0,
+    title: "",
+    details: "",
+    photo: [],
+  });
+  const [showThankYou, setShowThankYou] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.rating) return alert("Please select a rating!");
+
+    setShowThankYou(true);
+    setTimeout(() => {
+      setShowThankYou(false);
+      onClose();
+      setFormData({ name: "", email: "", rating: 0, title: "", details: "", photo: [] });
+    }, 2500);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10">
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="p-6 sm:p-8">
+              <h3 className="text-2xl font-semibold mb-2">Add Review for Order #{order?.id}</h3>
+              <p className="text-[var(--text-muted)] mb-6">Share your experience with this order</p>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <input type="text" placeholder="Name *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                  <input type="email" placeholder="Email *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium">Your Rating *</label>
+                  <div className="flex space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        fill="currentColor"
+                        className={`w-10 h-10 cursor-pointer transition ${star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"}`}
+                        onClick={() => setFormData({ ...formData, rating: star })}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <input type="text" placeholder="Review Title *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+
+                <textarea placeholder="Write your detailed review *" required rows="5" className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
+
+                <div>
+                  <label className="block mb-2 font-medium">Add Photos / Videos (Optional)</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition" onClick={() => document.getElementById("reviewFileInput").click()}>
+                    <UploadCloud className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span></p>
+                    {formData.photo.length > 0 && (
+                      <div className="flex flex-wrap gap-3 mt-4 justify-center">
+                        {formData.photo.map((file, idx) => (
+                          <div key={idx} className="relative w-28 h-28 rounded overflow-hidden border">
+                            {file.type.startsWith("image/") ? <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" /> : <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" controls />}
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, photo: formData.photo.filter((_, i) => i !== idx) }); }} className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">×</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <input id="reviewFileInput" type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => setFormData({ ...formData, photo: [...formData.photo, ...Array.from(e.target.files)] })} />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition">Cancel</button>
+                  <button type="submit" className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition">Submit Review</button>
+                </div>
+              </form>
+            </div>
+
+            <AnimatePresence>
+              {showThankYou && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl">
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
+                    <img src="/review.png" alt="Thank you" className="w-32 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-[var(--secondary)] mb-2">Thank You!</h3>
+                    <p className="text-[var(--text-muted)]">Your review has been submitted successfully.</p>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ================== RETURN MODAL ================== */
+function ReturnModal({ order, isOpen, onClose }) {
+  const [reason, setReason] = useState("");
+  const [comments, setComments] = useState("");
+  const [showThankYou, setShowThankYou] = useState(false);
+
+  const reasons = [
+    "Received wrong item",
+    "Product damaged or defective",
+    "Not satisfied with quality",
+    "Ordered by mistake",
+    "Found cheaper elsewhere",
+    "Other",
+  ];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!reason) return alert("Please select a return reason!");
+
+    setShowThankYou(true);
+    setTimeout(() => {
+      setShowThankYou(false);
+      onClose();
+      setReason("");
+      setComments("");
+    }, 3000);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-lg w-full relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle className="w-10 h-10 text-red-500" />
+                <h3 className="text-2xl font-semibold">Return Order #{order?.id}</h3>
+              </div>
+              <p className="text-[var(--text-muted)] mb-6">Let us know why you want to return this order.</p>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="block mb-2 font-medium">Reason for Return *</label>
+                  <select value={reason} onChange={(e) => setReason(e.target.value)} required className="w-full border p-3 rounded focus:ring-2 focus:ring-[var(--primary)]">
+                    <option value="">Select a reason</option>
+                    {reasons.map((r) => (<option key={r} value={r}>{r}</option>))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium">Additional Comments (Optional)</label>
+                  <textarea placeholder="Tell us more..." rows="4" value={comments} onChange={(e) => setComments(e.target.value)} className="w-full border p-3 rounded focus:ring-2 focus:ring-[var(--primary)] resize-none" />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition">Cancel</button>
+                  <button type="submit" className="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 transition">Submit Return Request</button>
+                </div>
+              </form>
+            </div>
+
+            <AnimatePresence>
+              {showThankYou && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl">
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <h3 className="text-2xl font-bold text-green-600 mb-2">Return Request Submitted!</h3>
+                    <p className="text-[var(--text-muted)]">We'll review it and get back to you soon.</p>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ================== ORDERS PAGE ================== */
 export default function OrdersPage() {
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
+  const [selectedOrderForReturn, setSelectedOrderForReturn] = useState(null);
+
   return (
     <div className="min-h-screen">
       {/* HERO */}
@@ -279,8 +495,8 @@ export default function OrdersPage() {
             My Orders
           </motion.h1>
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mt-6 flex justify-center items-center gap-3 text-white text-sm sm:text-base">
-            <Link to="/" className="hover:text-[var(--primary)] hover:underline font-medium transition-all">Home</Link>
-            <span className="font-bold">\</span>
+            <Link to="/" className="hover:text-[var(--text-main)] hover:font-bold hover:underline font-medium transition-all">Home</Link>
+            <span className="font-bold">\\</span>
             <span className="font-semibold">My Orders</span>
           </motion.div>
         </div>
@@ -319,8 +535,22 @@ export default function OrdersPage() {
                 {order.status}
               </span>
               <div className="flex flex-wrap gap-3">
-                {order.status !== "Delivered" && <button className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition">Return Order</button>}
-                {order.status === "Delivered" && <button className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition">Add Review</button>}
+                {order.status !== "Delivered" && (
+                  <button
+                    onClick={() => setSelectedOrderForReturn(order)}
+                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
+                  >
+                    Return Order
+                  </button>
+                )}
+                {order.status === "Delivered" && (
+                  <button
+                    onClick={() => setSelectedOrderForReview(order)}
+                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
+                  >
+                    Add Review
+                  </button>
+                )}
                 <button
                   className="px-6 py-2 border border-[var(--secondary)] text-[var(--text-main)] rounded hover:bg-[var(--bg-soft)] transition"
                   onClick={() => downloadInvoice(order)}
@@ -335,6 +565,10 @@ export default function OrdersPage() {
           </div>
         ))}
       </div>
+
+      {/* Modals */}
+      <ReviewModal order={selectedOrderForReview} isOpen={!!selectedOrderForReview} onClose={() => setSelectedOrderForReview(null)} />
+      <ReturnModal order={selectedOrderForReturn} isOpen={!!selectedOrderForReturn} onClose={() => setSelectedOrderForReturn(null)} />
     </div>
   );
 }

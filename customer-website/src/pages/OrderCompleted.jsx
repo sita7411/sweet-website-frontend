@@ -254,7 +254,7 @@ function InvoicePDF() {
                 color: "#2e2e2e",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between", // ensures footer stays at bottom
+                justifyContent: "space-between", 
             }}
         >
             {/* ===== CONTENT ===== */}

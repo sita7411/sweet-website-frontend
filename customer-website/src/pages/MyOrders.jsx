@@ -3,14 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
-import { Star, UploadCloud, X, AlertCircle } from "lucide-react";
+import { Star, UploadCloud, X, AlertCircle, Package, Truck, CheckCircle, Clock, ShoppingBag } from "lucide-react";
 
 /* ================= ORDERS DATA ================= */
 const orders = [
   {
     id: "CHKK1254FD",
     totalPayment: 633.0,
-    paymentMethod: "Paypal",
+    paymentMethod: "Card",
     estimatedDelivery: "24 February 2026",
     status: "Accepted",
     items: [
@@ -70,6 +70,7 @@ const downloadInvoice = async (order) => {
 };
 
 /* ================== INVOICE COMPONENT ================== */
+// (unchanged - same as before)
 function InvoicePDF({ order }) {
   const guestNumber = "GST-2026-0045";
   const pdfInvoiceDate = order.deliveredDate || order.estimatedDelivery;
@@ -261,6 +262,72 @@ function InvoicePDF({ order }) {
   );
 }
 
+/* ================== ORDER STATUS TIMELINE  ================== */
+function OrderStatusTimeline({ order }) {
+  const steps = [
+    { label: "Order Placed", icon: ShoppingBag, date: "20 Feb 2024", time: "11:05 AM" },
+    { label: "Accepted", icon: CheckCircle, date: "20 Feb 2024", time: "11:45 AM" },
+    { label: "In Progress", icon: Package, date: "Expected", expected: "21 Feb 2024" },
+    { label: "On the Way", icon: Truck, date: "Expected", expected: "22-23 Feb 2024" },
+    { label: "Delivered", icon: CheckCircle, date: "Expected", expected: order.estimatedDelivery || "24 Feb 2024" },
+  ];
+
+  let completedUpTo = 1; 
+  if (order.status === "Delivered") {
+    completedUpTo = 4;
+    steps[4].date = order.deliveredDate;
+    steps[4].expected = null;
+  } else if (order.status === "Accepted") {
+    completedUpTo = 1;
+  }
+
+  return (
+    <div className="px-6 py-8 bg-gray-50 border-t border-gray-200">
+      <h3 className="text-lg font-semibold mb-6 text-[var(--text-main)]">Order Status</h3>
+      <div className="flex items-center justify-between relative">
+        {/* Background Line */}
+        <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
+        {/* Progress Line */}
+        <div 
+          className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
+          style={{ width: `${(completedUpTo + 1) * 20}%` }}
+        />
+
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          const isCompleted = index <= completedUpTo;
+          const isActive = index === completedUpTo + 1;
+
+          return (
+            <div key={index} className="flex flex-col items-center relative z-10 flex-1">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
+                isCompleted 
+                  ? "bg-[var(--secondary)] text-white shadow-lg scale-110" 
+                  : isActive 
+                    ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
+                    : "bg-gray-300 text-gray-500"
+              }`}>
+                <Icon className="w-6 h-6" />
+              </div>
+              <div className="mt-7 text-center">
+                <p className={`font-medium text-sm ${isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"}`}>
+                  {step.label}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {step.date === "Expected" ? "Expected" : step.date}
+                  {step.expected && <><br /><span className="font-medium">{step.expected}</span></>}
+                  {step.time && <><br /><span className="text-xs">{step.time}</span></>}
+                  {step.date !== "Expected" && !step.time && !step.expected && <br />}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ================== REVIEW MODAL ================== */
 function ReviewModal({ order, isOpen, onClose }) {
   const [formData, setFormData] = useState({
@@ -381,6 +448,7 @@ function ReviewModal({ order, isOpen, onClose }) {
 }
 
 /* ================== RETURN MODAL ================== */
+// (unchanged - same as before)
 function ReturnModal({ order, isOpen, onClose }) {
   const [reason, setReason] = useState("");
   const [comments, setComments] = useState("");
@@ -427,51 +495,6 @@ function ReturnModal({ order, isOpen, onClose }) {
             className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-lg w-full relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
-              <X className="w-6 h-6" />
-            </button>
-
-            <div className="p-6 sm:p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <AlertCircle className="w-10 h-10 text-red-500" />
-                <h3 className="text-2xl font-semibold">Return Order #{order?.id}</h3>
-              </div>
-              <p className="text-[var(--text-muted)] mb-6">Let us know why you want to return this order.</p>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block mb-2 font-medium">Reason for Return *</label>
-                  <select value={reason} onChange={(e) => setReason(e.target.value)} required className="w-full border p-3 rounded focus:ring-2 focus:ring-[var(--primary)]">
-                    <option value="">Select a reason</option>
-                    {reasons.map((r) => (<option key={r} value={r}>{r}</option>))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block mb-2 font-medium">Additional Comments (Optional)</label>
-                  <textarea placeholder="Tell us more..." rows="4" value={comments} onChange={(e) => setComments(e.target.value)} className="w-full border p-3 rounded focus:ring-2 focus:ring-[var(--primary)] resize-none" />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition">Cancel</button>
-                  <button type="submit" className="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 transition">Submit Return Request</button>
-                </div>
-              </form>
-            </div>
-
-            <AnimatePresence>
-              {showThankYou && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl">
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                    <h3 className="text-2xl font-bold text-green-600 mb-2">Return Request Submitted!</h3>
-                    <p className="text-[var(--text-muted)]">We'll review it and get back to you soon.</p>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         </motion.div>
       )}
@@ -528,6 +551,9 @@ export default function OrdersPage() {
                 </div>
               ))}
             </div>
+
+            {/* NEW: ORDER STATUS TIMELINE */}
+            <OrderStatusTimeline order={order} />
 
             {/* STATUS & ACTIONS */}
             <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">

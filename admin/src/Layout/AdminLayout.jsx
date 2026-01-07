@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar/Sidebar";
-import Navbar from "../components/Navbar/Navbar"; // updated
+import Navbar from "../components/Navbar/Navbar";
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -16,19 +16,15 @@ const AdminLayout = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-main)]">
-      {/* Sidebar */}
+    <div className="relative min-h-screen bg-[var(--bg-main)]/30">
       <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Navbar with sidebar control */}
+      <div className="lg:ml-64 min-h-screen flex flex-col">
         <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-        <main className="flex-1 p-4 md:p-6 bg-[var(--bg-soft)]/30 mt-20">
-          {/* mt-20 ensures content starts below navbar */}
-          <Outlet />
-        </main>
+    <main className="flex-1 p-4 md:p-7 pt-20 lg:pt-30">
+  <Outlet />
+</main>
       </div>
     </div>
   );

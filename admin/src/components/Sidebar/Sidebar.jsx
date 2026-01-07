@@ -150,18 +150,7 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
   }, [location.pathname]);
 
   // Auto-open sidebar on large screens
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsSidebarOpen(true);
-      } else {
-        setIsSidebarOpen(false);
-      }
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [setIsSidebarOpen]);
+
 
   const toggleMenu = (name) => {
     setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }));
@@ -182,13 +171,17 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
         )}
       </AnimatePresence>
 
+
       {/* Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ x: isSidebarOpen ? 0 : -256 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-[var(--bg-main)] border-r border-[var(--secondary)]/10 flex flex-col lg:relative lg:z-auto lg:translate-x-0"
-      >
+   <motion.aside
+  initial={false}
+  animate={{ x: isSidebarOpen ? 0 : -256 }}
+  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+  className="
+    fixed inset-y-0 left-0 z-60 w-64 bg-[var(--bg-main)] border-r border-[var(--secondary)]/10 flex flex-col
+    lg:fixed lg:inset-y-0 lg:z-auto lg:translate-x-0
+  "
+>
         {/* LOGO */}
         <div className="px-6 py-5 border-b border-[var(--secondary)]/10">
           <div className="flex items-center gap-1">
@@ -263,10 +256,9 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
                                 <Link
                                   to={sub.path}
                                   className={`block px-3 py-2 rounded-lg text-sm transition
-                                    ${
-                                      location.pathname === sub.path
-                                        ? "bg-[var(--primary)]/15 text-[var(--primary)] font-medium"
-                                        : "text-[var(--text-muted)] hover:bg-[var(--bg-soft)] hover:text-[var(--text-main)]"
+                                    ${location.pathname === sub.path
+                                      ? "bg-[var(--primary)]/15 text-[var(--primary)] font-medium"
+                                      : "text-[var(--text-muted)] hover:bg-[var(--bg-soft)] hover:text-[var(--text-main)]"
                                     }`}
                                 >
                                   {sub.name}

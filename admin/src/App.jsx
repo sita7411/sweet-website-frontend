@@ -1,19 +1,19 @@
-// src/Layout/AdminLayout.jsx
-import React from "react";
-import Sidebar from "./components/Sidebar/Sidebar";
+import { Routes, Route, Navigate } from "react-router-dom";
+import AdminLayout from "./Layout/AdminLayout";
 
-const AdminLayout = ({ children }) => {
+function App() {
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <Sidebar />
+    <Routes>
+      <Route element={<AdminLayout />}>
+        <Route path="/dashboard" element={<h1>Dashboard</h1>} />
+        <Route path="/products" element={<h1>Products</h1>} />
+        <Route path="/products/add" element={<h1>Add Product</h1>} />
+        <Route path="/orders" element={<h1>Orders</h1>} />
+      </Route>
 
-      {/* Main content */}
-      <div className="flex-1 p-6 min-h-screen">
-        {children}
-      </div>
-    </div>
+      <Route path="*" element={<Navigate to="/dashboard" />} />
+    </Routes>
   );
-};
+}
 
-export default AdminLayout;
+export default App;

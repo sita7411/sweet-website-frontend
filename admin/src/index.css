@@ -10,3 +10,14 @@
   --text-muted: #8a6a52;
   --accent: #f2b705;
 }
+
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;   
+  scrollbar-width: none;    
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;              
+}

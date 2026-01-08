@@ -25,7 +25,7 @@ const sidebarLinks = [
     icon: CubeIcon,
     path: "/products",
     submenu: [
-      { name: "All Products", path: "/products" },
+      { name: "All Products", path: "/allproducts" },
       { name: "Add Product", path: "/products/add" },
       { name: "Categories", path: "/products/categories" },
       { name: "Brands", path: "/products/brands" },
@@ -149,9 +149,6 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
     setOpenMenus(newOpenMenus);
   }, [location.pathname]);
 
-  // Auto-open sidebar on large screens
-
-
   const toggleMenu = (name) => {
     setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }));
   };
@@ -177,21 +174,56 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
   initial={false}
   animate={{ x: isSidebarOpen ? 0 : -256 }}
   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-  className="
-    fixed inset-y-0 left-0 z-60 w-64 bg-[var(--bg-main)] border-r border-[var(--secondary)]/10 flex flex-col
-    lg:fixed lg:inset-y-0 lg:z-auto lg:translate-x-0
-  "
+ className="
+  fixed inset-y-0 left-0 z-60
+  w-56 md:w-60 lg:w-64 xl:w-64
+  bg-[var(--bg-main)] border-r border-[var(--secondary)]/10
+  flex flex-col
+  lg:fixed lg:inset-y-0 lg:z-auto lg:translate-x-0
+"
+
 >
         {/* LOGO */}
-        <div className="px-6 py-5 border-b border-[var(--secondary)]/10">
-          <div className="flex items-center gap-1">
-            <img src="/Logo_Marvel.png" className="w-25 h-25 -mt-4 -mb-4 -ml-2 object-cover" alt="Logo" />
-            <div>
-              <h1 className="text-[17px] whitespace-nowrap font-semibold text-[var(--text-main)]">Marvel Crunch</h1>
-              <p className="text-xs text-[var(--text-muted)] tracking-wide">Admin Panel</p>
-            </div>
-          </div>
-        </div>
+        <div className="px-4 lg:px-6 py-4 border-b border-[var(--secondary)]/10">
+  <div className="flex items-center gap-2">
+    {/* LOGO */}
+    <img
+      src="/Logo_Marvel.png"
+      alt="Logo"
+      className="
+        w-16 h-16           
+        xl:w-25 xl:h-25   
+        object-cover
+        -mt-2 -mb-2       /* lg screen adjust */
+        xl:-mt-4 xl:-mb-4 xl:-ml-2 /* desktop original */
+      "
+    />
+
+    {/* TEXT */}
+    <div className="leading-tight">
+      <h1
+        className="
+          font-semibold text-[var(--text-main)]
+          text-[17px] lg:text-[15px] xl:text-[17px] /* lg chhota, xl original */
+          whitespace-nowrap
+        "
+      >
+        Marvel Crunch
+      </h1>
+
+      <p
+        className="
+          text-[14px] xl:block
+          text-[var(--text-muted)]
+          tracking-wide
+        "
+      >
+        Admin Panel
+      </p>
+    </div>
+  </div>
+</div>
+
 
         {/* MENU */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-hide">

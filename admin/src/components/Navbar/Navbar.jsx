@@ -23,11 +23,13 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
   const unread = notifications.filter((n) => n.unread).length;
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 h-20 transition-all ${
-        isSidebarOpen ? "lg:left-64" : "lg:left-0"
-      }`}
-    >
+   <header
+  className={`fixed top-0 z-40 h-20 transition-all
+    left-0 right-0 w-full
+    ${isSidebarOpen ? "lg:left-64 lg:w-[calc(100%-16rem)]" : "lg:left-0 lg:w-full"}
+  `}
+>
+
       <div className="h-20  bg-[#fffaf3] backdrop-blur-xl border border-[var(--secondary)]/10 shadow-lg px-4 flex items-center justify-between">
 
         {/* LEFT: Hamburger + Search */}

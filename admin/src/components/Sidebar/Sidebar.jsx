@@ -27,9 +27,8 @@ const sidebarLinks = [
     submenu: [
       { name: "All Products", path: "/products/all" },
       { name: "Add Product", path: "/products/add" },
-      { name: "Categories", path: "/products/categories" },
-      { name: "Brands", path: "/products/brands" },
-      { name: "Attributes", path: "/products/attributes" },
+      { name: "Popular Product", path: "/products/Popular" },
+      { name: "Best Sell Product", path: "/products/bestsell" },
     ],
   },
   {

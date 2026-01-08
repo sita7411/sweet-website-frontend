@@ -54,7 +54,7 @@ export default function ProductPage() {
   const handleDelete = () => toast.error("Product deleted");
 
   return (
-    <div className="min-h-screen bg-[#fdf7f0] p-4 md:p-6 lg:p-8 space-y-6 text-[#3a2416]">
+    <div className="min-h-screen bg-[var(--bg-main)] p-4 md:p-6 lg:p-8 space-y-6 text-[#3a2416]">
       {/* Toast */}
       <ToastContainer
         position="top-right"

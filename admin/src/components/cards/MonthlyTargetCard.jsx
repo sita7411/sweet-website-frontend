@@ -1,23 +1,102 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const MonthlyTargetCard = () => {
-  const percentage = 85;
+  const defaultTarget = 600000; // Default target
+  const [target, setTarget] = useState(defaultTarget);
+  const [percentage, setPercentage] = useState(85);
+  const [editingTarget, setEditingTarget] = useState(false);
 
-  const size = 140; // base SVG size (will scale)
+  const size = 140;
   const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
   const circumference = Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
 
+  const [openMenu, setOpenMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpenMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleMenu = () => setOpenMenu(!openMenu);
+
+  const handleTargetSave = (e) => {
+    e.preventDefault();
+    const value = parseInt(e.target.targetValue.value.replace(/\D/g, ""));
+    if (!isNaN(value)) {
+      setTarget(value);
+      setPercentage(Math.min(Math.round((value / defaultTarget) * 100), 100));
+    }
+    setEditingTarget(false);
+  };
+
+  const handleReset = () => {
+    setTarget(defaultTarget);
+    setPercentage(85);
+    setEditingTarget(false);
+    setOpenMenu(false);
+  };
+
+  const handleViewDetails = () => {
+    alert(
+      `Target: ₹${target.toLocaleString()}\nRevenue: ₹510,000\nProgress: ${percentage}%`
+    );
+    setOpenMenu(false);
+  };
+
   return (
-    <div className="bg-[#fffaf3] rounded-xl shadow-md p-4 sm:p-6 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto">
+    <div className=" p-4 sm:p-6 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto relative">
 
       {/* Header */}
       <div className="flex justify-between items-center mb-3 sm:mb-4">
         <h2 className="text-sm sm:text-base font-semibold text-[#3a2416]">
           Monthly Target
         </h2>
-        <span className="text-[#8a6a52] text-lg">⋯</span>
+
+        {/* 3 Dots + Dropdown */}
+        <div className="relative" ref={menuRef}>
+          <span
+            className="text-[#8a6a52] text-lg cursor-pointer select-none"
+            onClick={toggleMenu}
+          >
+            ⋯
+          </span>
+
+          {openMenu && (
+            <div className="absolute right-0 mt-2 w-36 bg-white border rounded-md shadow-lg z-50">
+              <ul className="text-sm text-[#3a2416]">
+                <li
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setEditingTarget(true);
+                    setOpenMenu(false);
+                  }}
+                >
+                  Edit Target
+                </li>
+                <li
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={handleViewDetails}
+                >
+                  View Details
+                </li>
+                <li
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={handleReset}
+                >
+                  Reset
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Chart */}
@@ -27,22 +106,15 @@ const MonthlyTargetCard = () => {
           height={size / 2 + strokeWidth}
           className="absolute left-1/2 -translate-x-1/2"
         >
-          {/* Background */}
           <path
-            d={`M ${strokeWidth / 2},${size / 2}
-                A ${radius},${radius} 0 1,1
-                ${size - strokeWidth / 2},${size / 2}`}
+            d={`M ${strokeWidth / 2},${size / 2} A ${radius},${radius} 0 1,1 ${size - strokeWidth / 2},${size / 2}`}
             stroke="#fff1db"
             strokeWidth={strokeWidth}
             fill="none"
             strokeLinecap="round"
           />
-
-          {/* Progress */}
           <path
-            d={`M ${strokeWidth / 2},${size / 2}
-                A ${radius},${radius} 0 1,1
-                ${size - strokeWidth / 2},${size / 2}`}
+            d={`M ${strokeWidth / 2},${size / 2} A ${radius},${radius} 0 1,1 ${size - strokeWidth / 2},${size / 2}`}
             stroke="#c63b2f"
             strokeWidth={strokeWidth}
             fill="none"
@@ -53,7 +125,6 @@ const MonthlyTargetCard = () => {
           />
         </svg>
 
-        {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#3a2416]">
             {percentage}%
@@ -78,15 +149,28 @@ const MonthlyTargetCard = () => {
       <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center mb-3 sm:mb-4">
         <div className="bg-[#fff1db] rounded-lg py-2 sm:py-3">
           <p className="text-[10px] sm:text-[11px] text-[#8a6a52]">Target</p>
-          <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
-            $600k
-          </p>
+          {editingTarget ? (
+            <form onSubmit={handleTargetSave} className="flex justify-center">
+              <input
+                name="targetValue"
+                type="text"
+                defaultValue={`₹${target.toLocaleString()}`}
+                className="w-20 text-sm sm:text-base font-semibold text-[#3a2416] text-center border-b border-[#c63b2f] focus:outline-none"
+                autoFocus
+                onBlur={() => setEditingTarget(false)}
+              />
+            </form>
+          ) : (
+            <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
+              ₹{target.toLocaleString()}
+            </p>
+          )}
         </div>
 
         <div className="bg-white rounded-lg py-2 sm:py-3 shadow-sm">
           <p className="text-[10px] sm:text-[11px] text-[#8a6a52]">Revenue</p>
           <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
-            $510k
+            ₹51000
           </p>
         </div>
       </div>

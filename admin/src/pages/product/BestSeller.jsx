@@ -80,9 +80,8 @@ const BestSellerButton = ({ isBestSeller, onClick }) => (
 );
 
 // Desktop Table Row
-// Desktop Table Row
 const ProductRow = ({ product, onToggle }) => (
-  <tr className="border-t hover:bg-[var(--bg-soft)] transition-all">
+  <tr className="border-t hover:bg-[#fff6ec] transition-all">
     <td className="p-3 flex items-center gap-3">
       <img
         src={product.img}

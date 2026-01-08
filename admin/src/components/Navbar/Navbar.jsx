@@ -119,7 +119,7 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
                 setProfileOpen(!profileOpen);
                 setNotifOpen(false);
               }}
-              className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[var(--bg-soft)] hover:bg-[var(--primary)]/15 transition shadow-sm"
+              className="flex items-center gap-3 px-3 py-2  rounded-xl bg-[var(--bg-soft)] hover:bg-[var(--primary)]/15 transition shadow-sm"
             >
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white font-bold">
                 JD

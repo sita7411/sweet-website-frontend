@@ -153,6 +153,12 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
     setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
+  const handleMobileClose = () => {
+    if (window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -168,62 +174,43 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
         )}
       </AnimatePresence>
 
-
       {/* Sidebar */}
-   <motion.aside
-  initial={false}
-  animate={{ x: isSidebarOpen ? 0 : -256 }}
-  transition={{ type: "spring", stiffness: 300, damping: 30 }}
- className="
-  fixed inset-y-0 left-0 z-60
-  w-56 md:w-60 lg:w-64 xl:w-64
-  bg-[var(--bg-main)] border-r border-[var(--secondary)]/10
-  flex flex-col
-  lg:fixed lg:inset-y-0 lg:z-auto lg:translate-x-0
-"
-
->
+      <motion.aside
+        initial={false}
+        animate={{ x: isSidebarOpen ? 0 : -256 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="
+          fixed inset-y-0 left-0 z-60
+          w-56 md:w-60 lg:w-64 xl:w-64
+          bg-[var(--bg-main)] border-r border-[var(--secondary)]/10
+          flex flex-col
+          lg:fixed lg:inset-y-0 lg:z-auto lg:translate-x-0
+        "
+      >
         {/* LOGO */}
         <div className="px-4 lg:px-6 py-4 border-b border-[var(--secondary)]/10">
-  <div className="flex items-center gap-2">
-    {/* LOGO */}
-    <img
-      src="/Logo_Marvel.png"
-      alt="Logo"
-      className="
-        w-16 h-16           
-        xl:w-25 xl:h-25   
-        object-cover
-        -mt-2 -mb-2       /* lg screen adjust */
-        xl:-mt-4 xl:-mb-4 xl:-ml-2 /* desktop original */
-      "
-    />
-
-    {/* TEXT */}
-    <div className="leading-tight">
-      <h1
-        className="
-          font-semibold text-[var(--text-main)]
-          text-[17px] lg:text-[15px] xl:text-[17px] /* lg chhota, xl original */
-          whitespace-nowrap
-        "
-      >
-        Marvel Crunch
-      </h1>
-
-      <p
-        className="
-          text-[14px] xl:block
-          text-[var(--text-muted)]
-          tracking-wide
-        "
-      >
-        Admin Panel
-      </p>
-    </div>
-  </div>
-</div>
-
+          <div className="flex items-center gap-2">
+            <img
+              src="/Logo_Marvel.png"
+              alt="Logo"
+              className="
+                w-16 h-16           
+                xl:w-25 xl:h-25   
+                object-cover
+                -mt-2 -mb-2
+                xl:-mt-4 xl:-mb-4 xl:-ml-2
+              "
+            />
+            <div className="leading-tight">
+              <h1 className="font-semibold text-[var(--text-main)] text-[17px] lg:text-[15px] xl:text-[17px] whitespace-nowrap">
+                Marvel Crunch
+              </h1>
+              <p className="text-[14px] xl:block text-[var(--text-muted)] tracking-wide">
+                Admin Panel
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* MENU */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-hide">
@@ -233,36 +220,45 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
                 const Icon = link.icon;
                 const isActive =
                   location.pathname === link.path ||
-                  link.submenu?.some((s) => s.path === location.pathname);
+                  link.submenu?.some((s) => s.path === location.pathname) ||
+                  (link.path === "/dashboard" && location.pathname === "/");
+
                 const isOpen = openMenus[link.name];
+
+                // Common styles for both button and Link
+                const itemClasses = `relative flex items-center w-full px-4 py-2.5 rounded-xl transition-all
+                  ${isActive ? "text-[var(--primary)]" : "text-[var(--text-main)] hover:bg-[var(--bg-soft)]"}
+                  ${link.isLogout ? "text-red-600 hover:bg-red-50" : ""}
+                `;
 
                 return (
                   <li key={link.name} className={link.isLogout ? "mt-8" : ""}>
                     <div>
-                      {/* MAIN ITEM */}
-                      <button
-                        onClick={() => link.submenu && toggleMenu(link.name)}
-                        className={`relative flex items-center justify-between w-full px-4 py-2.5 rounded-xl transition-all
-                          ${isActive ? "text-[var(--primary)]" : "text-[var(--text-main)] hover:bg-[var(--bg-soft)]"}
-                          ${link.isLogout ? "text-red-600 hover:bg-red-50" : ""}
-                        `}
-                      >
-                        {isActive && (
-                          <motion.div
-                            layoutId="sidebar-active"
-                            className="absolute inset-0 rounded-xl bg-[var(--primary)]/10 shadow-[0_0_0_1px_var(--primary)]/20"
-                          />
-                        )}
+                      {/* MAIN ITEM - Conditional rendering */}
+                      {link.submenu ? (
+                        // Has submenu → Button to toggle
+                        <button
+                          onClick={() => toggleMenu(link.name)}
+                          className={`${itemClasses} justify-between`}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="sidebar-active"
+                              className="absolute inset-0 rounded-xl bg-[var(--primary)]/10 shadow-[0_0_0_1px_var(--primary)]/20"
+                            />
+                          )}
 
-                        <div className="flex items-center gap-3 relative z-10">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center
-                            ${isActive ? "bg-[var(--primary)]/15" : "bg-[var(--bg-soft)]"}`}>
-                            <Icon className="w-5 h-5" />
+                          <div className="flex items-center gap-3 relative z-10">
+                            <div
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center
+                                ${isActive ? "bg-[var(--primary)]/15" : "bg-[var(--bg-soft)]"}
+                              `}
+                            >
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-medium">{link.name}</span>
                           </div>
-                          <span className="text-sm font-medium">{link.name}</span>
-                        </div>
 
-                        {link.submenu && (
                           <motion.div
                             animate={{ rotate: isOpen ? 180 : 0 }}
                             transition={{ duration: 0.2 }}
@@ -270,8 +266,33 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
                           >
                             <ChevronDownIcon className="w-4 h-4" />
                           </motion.div>
-                        )}
-                      </button>
+                        </button>
+                      ) : (
+                        // No submenu → Link to navigate
+                        <Link
+                          to={link.path}
+                          onClick={handleMobileClose}
+                          className={itemClasses}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="sidebar-active"
+                              className="absolute inset-0 rounded-xl bg-[var(--primary)]/10 shadow-[0_0_0_1px_var(--primary)]/20"
+                            />
+                          )}
+
+                          <div className="flex items-center gap-3 relative z-10">
+                            <div
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center
+                                ${isActive ? "bg-[var(--primary)]/15" : "bg-[var(--bg-soft)]"}
+                              `}
+                            >
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm font-medium">{link.name}</span>
+                          </div>
+                        </Link>
+                      )}
 
                       {/* SUBMENU */}
                       <AnimatePresence>
@@ -287,6 +308,7 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
                               <li key={sub.name}>
                                 <Link
                                   to={sub.path}
+                                  onClick={handleMobileClose}
                                   className={`block px-3 py-2 rounded-lg text-sm transition
                                     ${location.pathname === sub.path
                                       ? "bg-[var(--primary)]/15 text-[var(--primary)] font-medium"

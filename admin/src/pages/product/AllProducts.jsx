@@ -79,7 +79,7 @@ export default function ProductPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <h1 className="text-3xl font-bold text-[var(--text-main)] tracking-tight">Products</h1>
           <p className="text-sm text-[#8a6a52] mt-1">
             Monitor inventory, sales performance & availability
           </p>

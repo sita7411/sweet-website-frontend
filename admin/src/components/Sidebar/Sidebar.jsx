@@ -25,7 +25,7 @@ const sidebarLinks = [
     icon: CubeIcon,
     path: "/products",
     submenu: [
-      { name: "All Products", path: "/allproducts" },
+      { name: "All Products", path: "/products/all" },
       { name: "Add Product", path: "/products/add" },
       { name: "Categories", path: "/products/categories" },
       { name: "Brands", path: "/products/brands" },

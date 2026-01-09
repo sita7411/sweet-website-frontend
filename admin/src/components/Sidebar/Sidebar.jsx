@@ -32,17 +32,10 @@ const sidebarLinks = [
     ],
   },
   {
-    name: "Orders",
+    name: "Order Management",
     icon: ShoppingBagIcon,
-    path: "/orders",
-    submenu: [
-      { name: "All Orders", path: "/orders/all" },
-      { name: "Pending", path: "/orders/pending" },
-      { name: "Processing", path: "/orders/processing" },
-      { name: "Shipped", path: "/orders/shipped" },
-      { name: "Completed", path: "/orders/completed" },
-      { name: "Cancelled", path: "/orders/cancelled" },
-    ],
+    path: "/orders/manage",
+    
   },
   {
     name: "Customers",

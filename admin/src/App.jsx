@@ -6,6 +6,8 @@ import AddProducts from "./pages/product/AddProducts";
 import PopularProducts from "./pages/product/PopularProducts";
 import BestSellerProducts from "./pages/product/BestSeller";
 import AllOrders from "./pages/Orders/AllOrders";
+import AllCustomers from "./pages/Customers/AllCustomers";
+import Inventory from "./pages/Inventory/Inventory";
 
 function App() {
   return (
@@ -16,7 +18,10 @@ function App() {
         <Route path="/products/add" element={<AddProducts />} />
         <Route path="/products/popular" element={<PopularProducts />} />
         <Route path="/products/bestsell" element={<BestSellerProducts />} />
-        <Route path="/orders/all" element={<AllOrders />} />
+        <Route path="/orders/manage" element={<AllOrders />} />
+        <Route path="/customers" element={<AllCustomers />} />
+        <Route path="/inventory/stock" element={<Inventory />} />
+
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" />} />

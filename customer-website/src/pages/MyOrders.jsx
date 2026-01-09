@@ -272,7 +272,7 @@ function OrderStatusTimeline({ order }) {
     { label: "Delivered", icon: CheckCircle, date: "Expected", expected: order.estimatedDelivery || "24 Feb 2024" },
   ];
 
-  let completedUpTo = 1; 
+  let completedUpTo = 1;
   if (order.status === "Delivered") {
     completedUpTo = 4;
     steps[4].date = order.deliveredDate;
@@ -288,7 +288,7 @@ function OrderStatusTimeline({ order }) {
         {/* Background Line */}
         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
         {/* Progress Line */}
-        <div 
+        <div
           className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
           style={{ width: `${(completedUpTo + 1) * 20}%` }}
         />
@@ -300,13 +300,12 @@ function OrderStatusTimeline({ order }) {
 
           return (
             <div key={index} className="flex flex-col items-center relative z-10 flex-1">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
-                isCompleted 
-                  ? "bg-[var(--secondary)] text-white shadow-lg scale-110" 
-                  : isActive 
-                    ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
-                    : "bg-gray-300 text-gray-500"
-              }`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${isCompleted
+                ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
+                : isActive
+                  ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
+                  : "bg-gray-300 text-gray-500"
+                }`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div className="mt-7 text-center">
@@ -447,65 +446,10 @@ function ReviewModal({ order, isOpen, onClose }) {
   );
 }
 
-/* ================== RETURN MODAL ================== */
-// (unchanged - same as before)
-function ReturnModal({ order, isOpen, onClose }) {
-  const [reason, setReason] = useState("");
-  const [comments, setComments] = useState("");
-  const [showThankYou, setShowThankYou] = useState(false);
-
-  const reasons = [
-    "Received wrong item",
-    "Product damaged or defective",
-    "Not satisfied with quality",
-    "Ordered by mistake",
-    "Found cheaper elsewhere",
-    "Other",
-  ];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!reason) return alert("Please select a return reason!");
-
-    setShowThankYou(true);
-    setTimeout(() => {
-      setShowThankYou(false);
-      onClose();
-      setReason("");
-      setComments("");
-    }, 3000);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-lg w-full relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
 
 /* ================== ORDERS PAGE ================== */
 export default function OrdersPage() {
   const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
-  const [selectedOrderForReturn, setSelectedOrderForReturn] = useState(null);
 
   return (
     <div className="min-h-screen">
@@ -530,7 +474,11 @@ export default function OrdersPage() {
         <h2 className="text-2xl font-bold text-[var(--text-main)]">Orders ({orders.length})</h2>
 
         {orders.map((order) => (
-          <div key={order.id} className="bg-[var(--bg-card)] border border-[var(--secondary)] rounded-xl shadow-sm overflow-hidden">
+          <div
+            key={order.id}
+            id={`order-${order.id}`}
+            className="bg-[var(--bg-card)] border border-[var(--secondary)] rounded-xl shadow-sm overflow-hidden"
+          >
             {/* ORDER HEADER */}
             <div className="bg-[var(--accent)] text-[var(--text-main)] px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm md:text-base">
               <div><span className="font-semibold">Order ID</span><br />#{order.id}</div>
@@ -563,12 +511,20 @@ export default function OrdersPage() {
               <div className="flex flex-wrap gap-3">
                 {order.status !== "Delivered" && (
                   <button
-                    onClick={() => setSelectedOrderForReturn(order)}
+                    onClick={() => {
+                      document
+                        .getElementById(`order-${order.id}`)
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
+                    }}
                     className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
                   >
-                    Return Order
+                    Track Order
                   </button>
                 )}
+
                 {order.status === "Delivered" && (
                   <button
                     onClick={() => setSelectedOrderForReview(order)}
@@ -594,7 +550,6 @@ export default function OrdersPage() {
 
       {/* Modals */}
       <ReviewModal order={selectedOrderForReview} isOpen={!!selectedOrderForReview} onClose={() => setSelectedOrderForReview(null)} />
-      <ReturnModal order={selectedOrderForReturn} isOpen={!!selectedOrderForReturn} onClose={() => setSelectedOrderForReturn(null)} />
     </div>
   );
 }

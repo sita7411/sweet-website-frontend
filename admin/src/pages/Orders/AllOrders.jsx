@@ -7,9 +7,10 @@ import {
     ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { useState, useRef, useEffect } from "react";
-import { toast, ToastContainer, Slide } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+/* ---------------- STATS ---------------- */
 const stats = [
     { title: "Total Orders", value: "1,248", change: "+6%", positive: true },
     { title: "Completed Orders", value: "986", change: "+4%", positive: true },
@@ -17,6 +18,7 @@ const stats = [
     { title: "Revenue", value: "$24,390", change: "+8%", positive: true },
 ];
 
+/* ---------------- ORDERS ---------------- */
 const initialOrders = [
     {
         id: "#998-5878",
@@ -27,6 +29,12 @@ const initialOrders = [
         price: "$17.84",
         status: "Rejected",
         isNew: true,
+        statusHistory: [{ status: "Placed", date: "2025-01-01T11:05" }],
+        expectedDates: {
+            Processing: "2025-01-02",
+            "On the Way": "2025-01-03",
+            Delivered: "2025-01-05",
+        },
     },
     {
         id: "#623-4534",
@@ -37,6 +45,11 @@ const initialOrders = [
         price: "$6.48",
         status: "Delivered",
         isNew: false,
+        statusHistory: [
+            { status: "Placed", date: "2025-01-03T10:10" },
+            { status: "Delivered", date: "2025-01-04T16:30" },
+        ],
+        expectedDates: {},
     },
     {
         id: "#998-5879",
@@ -47,21 +60,117 @@ const initialOrders = [
         price: "$11.70",
         status: "Pending",
         isNew: true,
+        statusHistory: [{ status: "Placed", date: "2025-01-05T09:45" }],
+        expectedDates: {
+            Processing: "2025-01-06",
+            "On the Way": "2025-01-07",
+            Delivered: "2025-01-09",
+        },
+    },
+       {
+        id: "#998-5879",
+        product: "Lego StarWars Edition",
+        image: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db",
+        customer: "Hellen Jimmy",
+        date: "2025-01-05",
+        price: "$11.70",
+        status: "Pending",
+        isNew: true,
+        statusHistory: [{ status: "Placed", date: "2025-01-05T09:45" }],
+        expectedDates: {
+            Processing: "2025-01-06",
+            "On the Way": "2025-01-07",
+            Delivered: "2025-01-09",
+        },
+    },
+       {
+        id: "#998-5879",
+        product: "Lego StarWars Edition",
+        image: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db",
+        customer: "Hellen Jimmy",
+        date: "2025-01-05",
+        price: "$11.70",
+        status: "Pending",
+        isNew: true,
+        statusHistory: [{ status: "Placed", date: "2025-01-05T09:45" }],
+        expectedDates: {
+            Processing: "2025-01-06",
+            "On the Way": "2025-01-07",
+            Delivered: "2025-01-09",
+        },
+    },
+       {
+        id: "#998-5879",
+        product: "Lego StarWars Edition",
+        image: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db",
+        customer: "Hellen Jimmy",
+        date: "2025-01-05",
+        price: "$11.70",
+        status: "Pending",
+        isNew: true,
+        statusHistory: [{ status: "Placed", date: "2025-01-05T09:45" }],
+        expectedDates: {
+            Processing: "2025-01-06",
+            "On the Way": "2025-01-07",
+            Delivered: "2025-01-09",
+        },
+    },
+       {
+        id: "#998-5879",
+        product: "Lego StarWars Edition",
+        image: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db",
+        customer: "Hellen Jimmy",
+        date: "2025-01-05",
+        price: "$11.70",
+        status: "Pending",
+        isNew: true,
+        statusHistory: [{ status: "Placed", date: "2025-01-05T09:45" }],
+        expectedDates: {
+            Processing: "2025-01-06",
+            "On the Way": "2025-01-07",
+            Delivered: "2025-01-09",
+        },
     },
 ];
 
-const FILTER_OPTIONS = ["All", "New", "Pending", "Processing", "Delivered", "Rejected", "Returned", "Cancelled"];
-const STATUS_OPTIONS = ["New", "Pending", "Processing", "Delivered", "Rejected", "Returned", "Cancelled"];
+/* ---------------- FILTER / STATUS ---------------- */
+const FILTER_OPTIONS = [
+    "All",
+    "Placed",
+    "Pending",
+    "Processing",
+    "On the Way",
+    "Delivered",
+    "Rejected",
+    "Cancelled",
+];
 
+const STATUS_OPTIONS = [
+    "Placed",
+    "Pending",
+    "Processing",
+    "On the Way",
+    "Delivered",
+    "Rejected",
+    "Cancelled",
+];
+
+/* ---------------- STATUS STYLE ---------------- */
 const statusStyle = (status) => {
     switch (status) {
-        case "Delivered": return "bg-green-100 text-green-800";
-        case "Pending": return "bg-yellow-100 text-yellow-800";
-        case "Rejected": return "bg-red-100 text-red-700";
-        case "Returned": return "bg-orange-100 text-orange-700";
-        case "Processing": return "bg-blue-100 text-blue-700";
-        case "Cancelled": return "bg-gray-200 text-gray-700";
-        default: return "bg-gray-100 text-gray-800";
+        case "Delivered":
+            return "bg-green-100 text-green-800";
+        case "Pending":
+            return "bg-yellow-100 text-yellow-800";
+        case "Processing":
+        case "On the Way":
+            return "bg-blue-100 text-blue-700";
+        case "Rejected":
+            return "bg-red-100 text-red-700";
+        case "Cancelled":
+            return "bg-gray-200 text-gray-700";
+        default:
+            return "bg-gray-100 text-gray-800";
     }
 };
 
@@ -73,78 +182,79 @@ export default function AllOrdersPage() {
     const [filterStatus, setFilterStatus] = useState("All");
     const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
     const buttonRefs = useRef({});
+    const dropdownRef = useRef(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
 
-    // Update order status
-    const updateStatus = (id, newStatus) => {
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus, isNew: false } : o));
-        setOpenDropdown(null);
-        const order = orders.find(o => o.id === id);
-        toast.success(`Order ${order?.id} status updated to "${newStatus}"!`);
-    };
-
-    // Export CSV
-    const exportToCSV = (orders) => {
-        if (!orders || orders.length === 0) return;
-        const headers = ["Order ID", "Product", "Customer", "Date", "Status", "Amount"];
-        const rows = orders.map(o => [o.id, o.product, o.customer, o.date, o.status, o.price]);
-        const csvContent = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "orders.csv";
-        link.click();
-    };
-
-    // Close dropdowns on click outside / scroll
+    /* ---------------- HANDLE CLICK OUTSIDE ---------------- */
     useEffect(() => {
-        const close = () => {
-            setOpenDropdown(null);
-            setFilterDropdownOpen(false);
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setOpenDropdown(null);
+            }
         };
-        window.addEventListener("scroll", close);
-        window.addEventListener("click", close);
-        return () => {
-            window.removeEventListener("scroll", close);
-            window.removeEventListener("click", close);
-        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Filter and search orders
-    const filteredOrders = orders.filter(o => {
-        const matchesSearch =
+    /* ---------------- UPDATE STATUS ---------------- */
+    const updateStatus = (id, newStatus) => {
+        setOrders((prev) =>
+            prev.map((o) =>
+                o.id === id
+                    ? {
+                        ...o,
+                        status: newStatus,
+                        isNew: false,
+                        statusHistory: [...(o.statusHistory || []), { status: newStatus, date: new Date().toISOString() }],
+                    }
+                    : o
+            )
+        );
+        setOpenDropdown(null);
+        toast.success(`Order ${id} updated to "${newStatus}"`);
+    };
+
+    /* ---------------- EXPORT CSV ---------------- */
+    const exportToCSV = (orders) => {
+        if (!orders || orders.length === 0) return;
+        const csvRows = [
+            ["Order ID", "Product", "Customer", "Date", "Status", "Amount"],
+            ...orders.map((o) => [o.id, o.product, o.customer, o.date, o.status, o.price]),
+        ];
+        const csvContent = csvRows.map((r) => r.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "orders.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    /* ---------------- FILTER & SORT ---------------- */
+    const filteredOrders = orders.filter((o) => {
+        const searchMatch =
             o.product.toLowerCase().includes(search.toLowerCase()) ||
             o.customer.toLowerCase().includes(search.toLowerCase()) ||
             o.id.toLowerCase().includes(search.toLowerCase());
 
-        const matchesStatus =
-            filterStatus === "All" ||
-            (filterStatus === "New" && o.isNew) ||
-            o.status === filterStatus;
-
-        return matchesSearch && matchesStatus;
+        const statusMatch = filterStatus === "All" || o.status === filterStatus;
+        return searchMatch && statusMatch;
     });
 
-    // Sort new orders to the top
-    const sortedOrders = [...filteredOrders].sort((a, b) => {
-        if (a.isNew && !b.isNew) return -1;
-        if (!a.isNew && b.isNew) return 1;
-        return 0;
-    });
+    const sortedOrders = [...filteredOrders].sort((a, b) => (a.isNew === b.isNew ? 0 : a.isNew ? -1 : 1));
 
     const totalPages = Math.ceil(sortedOrders.length / pageSize);
     const paginatedOrders = sortedOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const goToPage = (p) => p >= 1 && p <= totalPages && setCurrentPage(p);
 
-    const goToPage = (page) => {
-        if (page < 1 || page > totalPages) return;
-        setCurrentPage(page);
-    };
-
+    /* ---------------- UI ---------------- */
     return (
         <div className="min-h-screen bg-[var(--bg-main)] p-4 sm:p-6 space-y-6 text-[var(--text-main)]">
-
+            <ToastContainer position="top-right" autoClose={2000} />
             {/* Header */}
             <div className="space-y-1">
                 <h1 className="text-2xl sm:text-3xl font-bold">Orders</h1>
@@ -154,10 +264,15 @@ export default function AllOrdersPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((s, i) => (
-                    <div key={i} className="bg-[var(--bg-card)] rounded-xl p-4 sm:p-5 shadow hover:shadow-lg transition flex flex-col justify-between">
+                    <div
+                        key={i}
+                        className="bg-[var(--bg-card)] rounded-xl p-4 sm:p-5 shadow hover:shadow-lg transition flex flex-col justify-between"
+                    >
                         <div className="flex justify-between items-center">
                             <p className="text-xs sm:text-sm uppercase text-[var(--text-muted)]">{s.title}</p>
-                            <span className={`text-sm sm:text-base font-semibold ${s.positive ? "text-green-600" : "text-red-600"}`}>{s.change}</span>
+                            <span className={`text-sm sm:text-base font-semibold ${s.positive ? "text-green-600" : "text-red-600"}`}>
+                                {s.change}
+                            </span>
                         </div>
                         <h3 className="text-xl sm:text-2xl font-bold mt-2 sm:mt-3">{s.value}</h3>
                     </div>
@@ -174,7 +289,10 @@ export default function AllOrdersPage() {
                             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                             <input
                                 value={search}
-                                onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setCurrentPage(1);
+                                }}
                                 placeholder="Search by order id, product, customer..."
                                 className="w-full pl-10 py-2 text-xs sm:text-sm rounded-lg bg-[var(--bg-soft)] focus:ring-2 focus:ring-[var(--primary)] outline-none"
                             />
@@ -183,19 +301,30 @@ export default function AllOrdersPage() {
                         {/* Filter */}
                         <div className="relative">
                             <button
-                                onClick={e => { e.stopPropagation(); setFilterDropdownOpen(prev => !prev); }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setFilterDropdownOpen((prev) => !prev);
+                                }}
                                 className="px-3 py-2 text-sm rounded-lg bg-[var(--bg-soft)] flex items-center justify-between w-48 focus:ring-2 focus:ring-[var(--primary)] outline-none"
                             >
                                 {filterStatus === "All" ? "Filter by Status" : filterStatus}
                                 <ChevronDownIcon className="w-4 h-4 ml-2" />
                             </button>
                             {filterDropdownOpen && (
-                                <div className="absolute mt-1 w-48 bg-[var(--bg-card)] border rounded-xl shadow-xl overflow-hidden z-[9999]" onClick={e => e.stopPropagation()}>
-                                    {FILTER_OPTIONS.map(option => (
+                                <div
+                                    className="absolute mt-1 w-48 bg-[var(--bg-card)] border rounded-xl shadow-xl overflow-hidden z-[29]"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {FILTER_OPTIONS.map((option) => (
                                         <button
                                             key={option}
-                                            onClick={() => { setFilterStatus(option); setFilterDropdownOpen(false); setCurrentPage(1); }}
-                                            className={`w-full px-4 py-2 text-left text-sm transition ${filterStatus === option ? "bg-[var(--primary)] text-white" : "hover:bg-[var(--bg-soft)]"}`}
+                                            onClick={() => {
+                                                setFilterStatus(option);
+                                                setFilterDropdownOpen(false);
+                                                setCurrentPage(1);
+                                            }}
+                                            className={`w-full px-4 py-2 text-left text-sm transition ${filterStatus === option ? "bg-[var(--primary)] text-white" : "hover:bg-[var(--bg-soft)]"
+                                                }`}
                                         >
                                             {option}
                                         </button>
@@ -203,10 +332,12 @@ export default function AllOrdersPage() {
                                 </div>
                             )}
                         </div>
-
                     </div>
 
-                    <button onClick={() => exportToCSV(filteredOrders)} className="px-4 py-2 text-sm bg-[var(--primary)] text-white rounded-lg hover:bg-primary/90 transition">
+                    <button
+                        onClick={() => exportToCSV(filteredOrders)}
+                        className="px-4 py-2 text-sm bg-[var(--primary)] text-white rounded-lg hover:bg-primary/90 transition"
+                    >
                         Export CSV
                     </button>
                 </div>
@@ -226,8 +357,8 @@ export default function AllOrdersPage() {
                     </thead>
                     <tbody>
                         {paginatedOrders.length > 0 ? (
-                            paginatedOrders.map(o => (
-                                <tr key={o.id} className={`border-t hover:bg-[var(--bg-main)] transition ${o.isNew ? 'bg-red-50 animate-pulse' : ''}`}>
+                            paginatedOrders.map((o) => (
+                                <tr key={o.id} className={`border-t hover:bg-[var(--bg-main)] transition ${o.isNew ? "bg-red-50 animate-pulse" : ""}`}>
                                     <td className="p-3 font-medium">{o.id}</td>
                                     <td className="p-3 flex items-center gap-3">
                                         <img src={o.image} alt={o.product} className="w-10 h-10 rounded-lg object-cover border" />
@@ -238,11 +369,16 @@ export default function AllOrdersPage() {
                                     <td className="p-3 text-center">{o.date}</td>
                                     <td className="p-3 text-center">
                                         <button
-                                            ref={el => buttonRefs.current[o.id] = el}
-                                            onClick={e => {
+                                            ref={(el) => (buttonRefs.current[o.id] = el)}
+                                            onClick={(e) => {
                                                 e.stopPropagation();
                                                 const rect = e.currentTarget.getBoundingClientRect();
-                                                setDropdownPos({ top: rect.bottom + 6, left: rect.left });
+                                                const dropdownWidth = 176;
+                                                const dropdownHeight = 240;
+                                                const spaceBelow = window.innerHeight - rect.bottom;
+                                                const top = spaceBelow < dropdownHeight ? rect.top - dropdownHeight - 6 : rect.bottom + 6;
+                                                const left = Math.min(rect.left, window.innerWidth - dropdownWidth - 12);
+                                                setDropdownPos({ top, left });
                                                 setOpenDropdown(o.id);
                                             }}
                                             className={`px-3 py-1 text-xs font-semibold rounded-full ${statusStyle(o.status)}`}
@@ -272,8 +408,12 @@ export default function AllOrdersPage() {
                 {/* Mobile Table */}
                 <div className="flex flex-col gap-2 sm:hidden p-3">
                     {paginatedOrders.length > 0 ? (
-                        paginatedOrders.map(o => (
-                            <div key={o.id} className={`grid grid-cols-2 gap-2 bg-[var(--bg-main)] p-3 rounded-lg shadow-sm hover:shadow-md transition ${o.isNew ? 'border-2 border-[var(--primary)] animate-pulse' : ''}`}>
+                        paginatedOrders.map((o) => (
+                            <div
+                                key={o.id}
+                                className={`grid grid-cols-2 gap-2 bg-[var(--bg-main)] p-3 rounded-lg shadow-sm hover:shadow-md transition ${o.isNew ? "border-2 border-[var(--primary)] animate-pulse" : ""
+                                    }`}
+                            >
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2">
                                         <span className="font-semibold">{o.product}</span>
@@ -284,27 +424,35 @@ export default function AllOrdersPage() {
                                     <span className="text-[var(--text-muted)] text-xs">Date: {o.date}</span>
                                 </div>
                                 <div className="flex flex-col items-end justify-between gap-1 relative">
-                                    <div className="relative">
-                                        <span
-                                            className={`px-2 py-1 text-xs font-semibold rounded-full ${statusStyle(o.status)}`}
-                                            onClick={e => { e.stopPropagation(); setOpenDropdown(openDropdown === o.id ? null : o.id); }}
-                                        >
-                                            {o.status}
-                                        </span>
-                                        {openDropdown === o.id && (
-                                            <div className="absolute top-full mt-1 right-0 w-44 bg-[var(--bg-card)] border rounded-xl shadow-xl overflow-hidden z-50">
-                                                {STATUS_OPTIONS.map(s => (
-                                                    <button
-                                                        key={s}
-                                                        onClick={() => updateStatus(o.id, s)}
-                                                        className={`w-full px-4 py-2 text-sm text-left transition ${o.status === s ? 'bg-[var(--primary)] text-white' : 'hover:bg-[var(--bg-soft)]'}`}
-                                                    >
-                                                        {s}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <span
+                                        className={`px-2 py-1 text-xs font-semibold rounded-full ${statusStyle(o.status)}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const dropdownWidth = 176;
+                                            const dropdownHeight = STATUS_OPTIONS.length * 36; 
+                                            const padding = 8;
+
+                                            // initial top
+                                            let top = rect.bottom + 6; 
+                                            if (top + dropdownHeight + padding > window.innerHeight) {
+                                                top = rect.top - dropdownHeight - 6;
+                                            }
+                                            // clamp to top padding
+                                            top = Math.max(top, padding);
+
+                                            // initial left
+                                            let left = rect.left;
+                                            left = Math.min(left, window.innerWidth - dropdownWidth - padding);
+                                            left = Math.max(left, padding);
+
+                                            setDropdownPos({ top, left });
+                                            setOpenDropdown(openDropdown === o.id ? null : o.id);
+
+                                        }}
+                                    >
+                                        {o.status}
+                                    </span>
                                     <span className="font-semibold">{o.price}</span>
                                     <div className="flex gap-2 mt-1">
                                         <EyeIcon className="w-5 h-5 text-[var(--text-muted)] cursor-pointer hover:text-[var(--primary)] transition" />
@@ -314,9 +462,7 @@ export default function AllOrdersPage() {
                             </div>
                         ))
                     ) : (
-                        <div className="text-center text-[var(--text-muted)] p-4">
-                            No orders found.
-                        </div>
+                        <div className="text-center text-[var(--text-muted)] p-4">No orders found.</div>
                     )}
                 </div>
 
@@ -333,7 +479,7 @@ export default function AllOrdersPage() {
                             <button
                                 key={i + 1}
                                 onClick={() => goToPage(i + 1)}
-                                className={`px-3 py-1 rounded-lg ${currentPage === i + 1 ? 'bg-[var(--primary)] text-white' : 'border hover:bg-[var(--bg-soft)]'}`}
+                                className={`px-3 py-1 rounded-lg ${currentPage === i + 1 ? "bg-[var(--primary)] text-white" : "border hover:bg-[var(--bg-soft)]"}`}
                             >
                                 {i + 1}
                             </button>
@@ -345,14 +491,21 @@ export default function AllOrdersPage() {
                 </div>
             </div>
 
-            {/* Desktop Status Dropdown */}
+            {/* Dropdown Menu */}
             {openDropdown && dropdownPos && (
-                <div style={{ top: dropdownPos.top, left: dropdownPos.left }} className="fixed z-[99999] w-44 bg-[var(--bg-card)] border rounded-xl shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                    {STATUS_OPTIONS.map(s => (
+                <div
+                    ref={dropdownRef}
+                    style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                    className="fixed z-[99999] w-44 bg-[var(--bg-card)] border rounded-xl shadow-xl overflow-hidden"
+                >
+                    {STATUS_OPTIONS.map((s) => (
                         <button
                             key={s}
                             onClick={() => updateStatus(openDropdown, s)}
-                            className={`w-full px-4 py-2 text-sm text-left transition ${orders.find(o => o.id === openDropdown)?.status === s ? "bg-[var(--primary)] text-white" : "hover:bg-[var(--bg-soft)]"}`}
+                            className={`w-full px-4 py-2 text-sm text-left transition ${orders.find((o) => o.id === openDropdown)?.status === s
+                                    ? "bg-[var(--primary)] text-white"
+                                    : "hover:bg-[var(--bg-soft)]"
+                                }`}
                         >
                             {s}
                         </button>

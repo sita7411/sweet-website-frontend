@@ -2,14 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar/Sidebar";
 import Navbar from "../components/Navbar/Navbar";
-import Spinner from "../components/Spinner/Spinner"; // <-- import your Spinner.jsx
+import Spinner from "../components/Spinner/Spinner"; 
 import ToastProvider from "../components/ToastProvider";
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
-  const [loading, setLoading] = useState(true); // true initially for refresh
+  const [loading, setLoading] = useState(true); 
 
-  // Handle sidebar open/close on resize
   useEffect(() => {
     const handleResize = () => {
       setIsSidebarOpen(window.innerWidth >= 1024);
@@ -31,13 +30,13 @@ const AdminLayout = () => {
 
   // Else render admin layout
   return (
-    <div className="relative min-h-screen bg-[var(--bg-main)]/30">
+    <div className="relative min-h-screen bg-[var(--bg-main)]/30 ">
       <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
       <div className="lg:ml-64 min-h-screen flex flex-col">
         <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-        <main className="flex-1 p-4 md:p-7 pt-28 sm:pt-22 md:pt-28 lg:pt-26 xl:pt-30">
+        <main className="flex-1 p-4 md:p-7 pt-28 sm:pt-22 md:pt-28 lg:pt-26 xl:pt-30 ">
           <Outlet />
         </main>
       </div>

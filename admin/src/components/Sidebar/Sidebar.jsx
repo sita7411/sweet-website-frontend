@@ -36,7 +36,7 @@ const sidebarLinks = [
     icon: ShoppingBagIcon,
     path: "/orders",
     submenu: [
-      { name: "All Orders", path: "/orders" },
+      { name: "All Orders", path: "/orders/all" },
       { name: "Pending", path: "/orders/pending" },
       { name: "Processing", path: "/orders/processing" },
       { name: "Shipped", path: "/orders/shipped" },

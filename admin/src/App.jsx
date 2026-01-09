@@ -5,6 +5,7 @@ import AllProducts from "./pages/product/AllProducts";
 import AddProducts from "./pages/product/AddProducts";
 import PopularProducts from "./pages/product/PopularProducts";
 import BestSellerProducts from "./pages/product/BestSeller";
+import AllOrders from "./pages/Orders/AllOrders";
 
 function App() {
   return (
@@ -15,8 +16,7 @@ function App() {
         <Route path="/products/add" element={<AddProducts />} />
         <Route path="/products/popular" element={<PopularProducts />} />
         <Route path="/products/bestsell" element={<BestSellerProducts />} />
-
-        <Route path="/orders" element={<h1>Orders</h1>} />
+        <Route path="/orders/all" element={<AllOrders />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" />} />

@@ -20,27 +20,6 @@ const allProducts = [
   { id: 7, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #23 – Yellow", price: "$1.80", popular: false, rating: 4.7 },
 ];
 
-// Toast
-const Toast = () => (
-  <ToastContainer
-    position="top-right"
-    autoClose={2000}
-    hideProgressBar={false}
-    newestOnTop
-    closeOnClick
-    pauseOnHover
-    draggable
-    transition={Slide}
-    toastStyle={{
-      background: "#fffaf0",
-      color: "#3a2416",
-      fontWeight: 600,
-      borderRadius: "12px",
-      boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
-      padding: "16px 24px",
-    }}
-  />
-);
 
 // Rating Component
 const RatingStars = ({ rating }) => {

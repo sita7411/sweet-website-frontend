@@ -55,27 +55,7 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] p-4 md:p-6 lg:p-8 space-y-6 text-[#3a2416]">
-      {/* Toast */}
-      <ToastContainer
-        position="top-right"
-        autoClose={2500}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        transition={Slide}
-        toastStyle={{
-          background: '#fffaf0',
-          color: '#3a2416',
-          fontWeight: 600,
-          borderRadius: '10px',
-          boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
-          padding: '16px 24px',
-        }}
-      />
-
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>

@@ -65,8 +65,7 @@ export default function AddProduct() {
 
     return (
         <div className="p-4 sm:p-6 lg:p-10 bg-gradient-to-br from-[var(--bg-main)] to-[var(--bg-soft)] min-h-screen">
-            <ToastContainer transition={Slide} position="top-right" />
-
+    
             {/* Header */}
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
@@ -151,7 +150,7 @@ export default function AddProduct() {
                             </div>
                         </div>
 
-                        
+
                     </Section>
 
                     <Section title="Pricing & Inventory" icon={IndianRupee}>
@@ -168,37 +167,37 @@ export default function AddProduct() {
                     </Section>
 
                     <Section title="Ingredients" icon={Package}>
-  <div className="flex gap-2 flex-wrap mb-4">
-    {ingredients.map((ing) => (
-      <div
-        key={ing}
-        className="px-4 py-2 rounded-full border text-sm flex items-center gap-2 cursor-pointer bg-white hover:border-[var(--primary)]"
-      >
-        {ing}
-        <Trash2
-          size={14}
-          onClick={() => removeIngredient(ing)}
-          className="hover:text-red-600"
-        />
-      </div>
-    ))}
-  </div>
+                        <div className="flex gap-2 flex-wrap mb-4">
+                            {ingredients.map((ing) => (
+                                <div
+                                    key={ing}
+                                    className="px-4 py-2 rounded-full border text-sm flex items-center gap-2 cursor-pointer bg-white hover:border-[var(--primary)]"
+                                >
+                                    {ing}
+                                    <Trash2
+                                        size={14}
+                                        onClick={() => removeIngredient(ing)}
+                                        className="hover:text-red-600"
+                                    />
+                                </div>
+                            ))}
+                        </div>
 
-  <div className="flex gap-2 flex-wrap">
-    <input
-      value={newIngredient}
-      onChange={(e) => setNewIngredient(e.target.value)}
-      placeholder="e.g. Cardamom"
-      className="flex-1 min-w-[120px] px-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
-    />
-    <button
-      onClick={addIngredient}
-      className="px-4 py-2 rounded-xl bg-[var(--accent)] text-sm font-medium hover:opacity-90 transition"
-    >
-      Add
-    </button>
-  </div>
-</Section>
+                        <div className="flex gap-2 flex-wrap">
+                            <input
+                                value={newIngredient}
+                                onChange={(e) => setNewIngredient(e.target.value)}
+                                placeholder="e.g. Cardamom"
+                                className="flex-1 min-w-[120px] px-4 py-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-[var(--primary)]/20 outline-none"
+                            />
+                            <button
+                                onClick={addIngredient}
+                                className="px-4 py-2 rounded-xl bg-[var(--accent)] text-sm font-medium hover:opacity-90 transition"
+                            >
+                                Add
+                            </button>
+                        </div>
+                    </Section>
 
                 </div>
 
@@ -290,7 +289,7 @@ export default function AddProduct() {
                         </div>
                     </Section>
 
-                    
+
                 </div>
             </div>
         </div>

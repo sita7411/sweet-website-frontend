@@ -3,7 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar/Sidebar";
 import Navbar from "../components/Navbar/Navbar";
 import Spinner from "../components/Spinner/Spinner"; // <-- import your Spinner.jsx
-
+import ToastProvider from "../components/ToastProvider";
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
@@ -41,6 +41,7 @@ const AdminLayout = () => {
           <Outlet />
         </main>
       </div>
+      <ToastProvider />
     </div>
   );
 };

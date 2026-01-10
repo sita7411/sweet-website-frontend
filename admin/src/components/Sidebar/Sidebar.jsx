@@ -93,7 +93,6 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState({});
 
-  // Auto-open submenu based on current path
   useEffect(() => {
     const newOpenMenus = {};
     sidebarLinks.forEach((link) => {
@@ -136,7 +135,7 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="
           fixed inset-y-0 left-0 z-60
-          w-56 md:w-60 lg:w-64 xl:w-64
+          w-67 md:w-60 lg:w-64 xl:w-64
           bg-[var(--bg-main)] border-r border-[var(--secondary)]/10
           flex flex-col
           lg:fixed lg:inset-y-0 lg:z-auto lg:translate-x-0
@@ -180,7 +179,6 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
 
                 const isOpen = openMenus[link.name];
 
-                // Common styles for both button and Link
                 const itemClasses = `relative flex items-center w-full px-4 py-2.5 rounded-xl transition-all
                   ${isActive ? "text-[var(--primary)]" : "text-[var(--text-main)] hover:bg-[var(--bg-soft)]"}
                   ${link.isLogout ? "text-red-600 hover:bg-red-50" : ""}
@@ -189,9 +187,7 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
                 return (
                   <li key={link.name} className={link.isLogout ? "mt-8" : ""}>
                     <div>
-                      {/* MAIN ITEM - Conditional rendering */}
                       {link.submenu ? (
-                        // Has submenu → Button to toggle
                         <button
                           onClick={() => toggleMenu(link.name)}
                           className={`${itemClasses} justify-between`}
@@ -223,7 +219,6 @@ export default function AdminSidebar({ isSidebarOpen, setIsSidebarOpen }) {
                           </motion.div>
                         </button>
                       ) : (
-                        // No submenu → Link to navigate
                         <Link
                           to={link.path}
                           onClick={handleMobileClose}

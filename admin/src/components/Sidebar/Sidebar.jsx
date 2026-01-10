@@ -13,6 +13,7 @@ import {
   InboxIcon,
   TruckIcon,
   BanknotesIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
@@ -20,6 +21,9 @@ import { Link, useLocation } from "react-router-dom";
 /* ---------------- MENU CONFIG ---------------- */
 const sidebarLinks = [
   { name: "Dashboard", icon: HomeIcon, path: "/dashboard" },
+  
+  { name: "Notification", icon: BellIcon, path: "/notification" },
+
   {
     name: "Products",
     icon: CubeIcon,
@@ -35,7 +39,7 @@ const sidebarLinks = [
     name: "Order Management",
     icon: ShoppingBagIcon,
     path: "/orders/manage",
-    
+
   },
   {
     name: "Customers",
@@ -55,57 +59,22 @@ const sidebarLinks = [
       { name: "Banners", path: "/offer" },
     ],
   },
-  {
-    name: "Content",
-    icon: DocumentTextIcon,
-    path: "/content",
-    submenu: [
-      { name: "Pages", path: "/content/pages" },
-      { name: "Blog Posts", path: "/content/blogs" },
-      { name: "Reviews", path: "/content/reviews" },
-      { name: "FAQs", path: "/content/faqs" },
-    ],
-  },
+
   {
     name: "Inventory",
     icon: InboxIcon,
     path: "/inventory",
     submenu: [
       { name: "Stock Overview", path: "/inventory/stock" },
-      { name: "Suppliers", path: "/inventory/suppliers" },
-      { name: "Purchase Orders", path: "/inventory/purchase-orders" },
     ],
   },
-  {
-    name: "Shipping",
-    icon: TruckIcon,
-    path: "/shipping",
-    submenu: [
-      { name: "Shipping Methods", path: "/shipping/methods" },
-      { name: "Zones & Rates", path: "/shipping/zones" },
-      { name: "Tracking", path: "/shipping/tracking" },
-    ],
-  },
-  {
-    name: "Analytics",
-    icon: ChartBarIcon,
-    path: "/analytics",
-    submenu: [
-      { name: "Reports", path: "/analytics/reports" },
-      { name: "Sales Analytics", path: "/analytics/sales" },
-      { name: "Traffic Sources", path: "/analytics/traffic" },
-    ],
-  },
+
+
   {
     name: "Finance",
     icon: BanknotesIcon,
-    path: "/finance",
-    submenu: [
-      { name: "Transactions", path: "/finance/transactions" },
-      { name: "Payouts", path: "/finance/payouts" },
-      { name: "Refunds", path: "/finance/refunds" },
-      { name: "Taxes", path: "/finance/taxes" },
-    ],
+    path: "/finance/transactions",
+
   },
   {
     name: "Settings",
@@ -113,10 +82,7 @@ const sidebarLinks = [
     path: "/settings",
     submenu: [
       { name: "General", path: "/settings/general" },
-      { name: "Store Profile", path: "/settings/store" },
-      { name: "Payment Gateways", path: "/settings/payments" },
-      { name: "Security", path: "/settings/security" },
-      { name: "SEO", path: "/settings/seo" },
+      { name: "Hero Banner", path: "/settings/baner" },
     ],
   },
   { name: "Logout", icon: ArrowRightOnRectangleIcon, path: "/logout", isLogout: true },

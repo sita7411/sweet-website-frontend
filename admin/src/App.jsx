@@ -12,6 +12,10 @@ import AllCustomers from "./pages/Customers/AllCustomers";
 import AddCustomer from "./pages/Customers/AddCustomer";
 import Inventory from "./pages/Inventory/Inventory";
 import OfferPage from "./pages/Offers/OfferPage";
+import Transaction from "./pages/Finance/Transaction";
+import HeroBanner from "./pages/Settings/HeroBanner";
+import General from "./pages/Settings/General";
+import NotificationsPage from "./pages/NotificationsPage";
 
 function App() {
   return (
@@ -20,6 +24,7 @@ function App() {
       <Route element={<AdminLayout />}>
         <Route path="/admin/profile" element={<MyProfile />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/notification" element={<NotificationsPage />} />
         <Route path="/products/all" element={<AllProducts />} />
         <Route path="/products/add" element={<AddProducts />} />
         <Route path="/products/popular" element={<PopularProducts />} />
@@ -29,6 +34,9 @@ function App() {
         <Route path="/customers/add" element={<AddCustomer />} />
         <Route path="/inventory/stock" element={<Inventory />} />
         <Route path="/offer" element={<OfferPage />} />
+        <Route path="/finance/transactions" element={<Transaction />} />
+        <Route path="/settings/baner" element={<HeroBanner />} />
+        <Route path="/settings/general" element={<General />} />
 
       </Route>
 

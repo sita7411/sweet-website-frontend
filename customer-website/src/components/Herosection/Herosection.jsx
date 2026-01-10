@@ -24,7 +24,6 @@ const tabs = [
     img: 'mango_chikki.png',
     icon: 'mango_chikki.png',
     floatTop: 'mango.png',
-    floatBottom: '/images/float-nuts.png',
     floatLeft: 'nuts.png',
     desc: 'Sweet mango infused chikki',
   },
@@ -33,7 +32,6 @@ const tabs = [
     img: 'choclate.png',
     icon: 'choclate.png',
     floatTop: 'chockolate.png',
-    floatBottom: '/images/float-nuts.png',
     floatLeft: 'nuts.png',
     desc: 'Rich chocolate coated goodness',
   },
@@ -152,15 +150,6 @@ export default function HeroBanner() {
               animate={{ y: [0, -15, 0], rotate: [0, 6, 0] }}
               transition={{ repeat: Infinity, duration: 5 }}
             />
-          )}
-
-          {active.floatBottom && (
-              <motion.img
-                src={active.floatBottom}
-                className="absolute bottom-8 sm:bottom-10 left-16 sm:left-24 w-16 sm:w-20 z-20"
-                animate={{ y: [0, 15, 0] }}
-                transition={{ repeat: Infinity, duration: 3.5 }}
-              />
           )}
         </div>
 

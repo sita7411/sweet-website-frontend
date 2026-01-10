@@ -161,7 +161,7 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
 
                     <li>
                       <Link
-                        to="/admin/settings"
+                        to="/settings/general"
                         className="px-5 py-3 hover:bg-[var(--bg-soft)] flex items-center gap-3 cursor-pointer"
                         onClick={() => setProfileOpen(false)}
                       >

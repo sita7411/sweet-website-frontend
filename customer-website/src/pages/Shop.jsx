@@ -344,7 +344,7 @@ export default function ProductPage() {
                             </div>
 
                             {/* Grid: Mobile & Tablet = 2 cards, Desktop = 3 cards */}
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                                 {displayedProducts.length === 0 ? (
                                     <p className="col-span-2 lg:col-span-3 text-center py-12 text-[var(--text-muted)] text-lg font-medium">
                                         No products found for selected filters.

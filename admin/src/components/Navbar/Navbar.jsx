@@ -9,6 +9,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
   const [notifOpen, setNotifOpen] = useState(false);
@@ -23,12 +24,12 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
   const unread = notifications.filter((n) => n.unread).length;
 
   return (
-   <header
-  className={`fixed top-0 z-40 h-20 transition-all
+    <header
+      className={`fixed top-0 z-40 h-20 transition-all
     left-0 right-0 w-full
     ${isSidebarOpen ? "lg:left-64 lg:w-[calc(100%-16rem)]" : "lg:left-0 lg:w-full"}
   `}
->
+    >
 
       <div className="h-20  bg-[#fffaf3] backdrop-blur-xl border border-[var(--secondary)]/10 shadow-lg px-4 flex items-center justify-between">
 
@@ -97,9 +98,8 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
                   {notifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`px-5 py-3 hover:bg-[var(--bg-soft)] transition ${
-                        n.unread ? "bg-[var(--primary)]/10" : ""
-                      }`}
+                      className={`px-5 py-3 hover:bg-[var(--bg-soft)] transition ${n.unread ? "bg-[var(--primary)]/10" : ""
+                        }`}
                     >
                       <p className="text-sm font-medium">{n.text}</p>
                       <p className="text-xs text-[var(--text-muted)] mt-0.5">
@@ -148,16 +148,39 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
                   </div>
 
                   <ul className="py-2">
-                    <li className="px-5 py-3 hover:bg-[var(--bg-soft)] flex items-center gap-3 cursor-pointer">
-                      <UserIcon className="w-4 h-4" /> My Profile
+                    <li>
+                      <Link
+                        to="/admin/profile"
+                        className="px-5 py-3 hover:bg-[var(--bg-soft)] flex items-center gap-3 cursor-pointer"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <UserIcon className="w-4 h-4" />
+                        My Profile
+                      </Link>
                     </li>
-                    <li className="px-5 py-3 hover:bg-[var(--bg-soft)] flex items-center gap-3 cursor-pointer">
-                      <Cog6ToothIcon className="w-4 h-4" /> Settings
+
+                    <li>
+                      <Link
+                        to="/admin/settings"
+                        className="px-5 py-3 hover:bg-[var(--bg-soft)] flex items-center gap-3 cursor-pointer"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <Cog6ToothIcon className="w-4 h-4" />
+                        Settings
+                      </Link>
                     </li>
-                    <li className="mt-2 border-t border-[var(--secondary)]/10 px-5 py-3 text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer">
-                      <ArrowRightOnRectangleIcon className="w-4 h-4" /> Logout
+
+                    <li className="mt-2 border-t border-[var(--secondary)]/10">
+                      <Link
+                        to="/logout"
+                        className="px-5 py-3 text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer"
+                      >
+                        <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                        Logout
+                      </Link>
                     </li>
                   </ul>
+
                 </motion.div>
               )}
             </AnimatePresence>

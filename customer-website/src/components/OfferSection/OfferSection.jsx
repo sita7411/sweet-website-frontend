@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -69,10 +68,9 @@ const OfferSection = () => {
         >
           <motion.div className="text-center" variants={fadeUp}>
             <h2 className="text-4xl -mt-9 font-extrabold text-[#d99a2b] tracking-wide">
-              CRUNCHY & SWEET
+              STRAWBERRY CHOCOLATE CHIKKI
             </h2>
             <div className="w-16 h-[2px] bg-[#d99a2b] mx-auto my-5"></div>
-            <h3 className="text-[22px] font-extrabold text-[#3a2416]">CHIKKI</h3>
             <p className="mt-2 text-sm text-[#6b4b3a] leading-relaxed">
               Made with jaggery, nuts, and lots of love. Perfect for a healthy snack!
             </p>
@@ -126,17 +124,15 @@ const OfferSection = () => {
           variants={fadeUp}
         >
           <motion.h2
-            className="text-4xl md:text-5xl font-extrabold mt-9 text-[#d99a2b] tracking-wide"
+            className="text-3xl md:text-3xl font-extrabold mt-9 text-[#d99a2b] tracking-wide"
             variants={fadeUp}
           >
-            CRUNCHY & SWEET
+            STRAWBERRY CHOCOLATE CHIKKI
           </motion.h2>
 
           <div className="w-24 h-[2px] bg-[#d99a2b] mx-auto my-4"></div>
 
-          <motion.h3 className="text-3xl md:text-4xl font-extrabold text-[#3a2416]" variants={fadeUp}>
-            CHIKKI
-          </motion.h3>
+        
 
           <motion.p className="mt-4 max-w-xl mx-auto text-base text-[#6b4b3a] leading-relaxed" variants={fadeUp}>
             Made with jaggery, nuts, and lots of love. <br />

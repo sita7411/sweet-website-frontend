@@ -48,14 +48,11 @@ const sidebarLinks = [
     ],
   },
   {
-    name: "Marketing",
+    name: "Offers Management",
     icon: MegaphoneIcon,
-    path: "/marketing",
+    path: "/offer",
     submenu: [
-      { name: "Coupons", path: "/marketing/coupons" },
-      { name: "Discounts", path: "/marketing/discounts" },
-      { name: "Banners", path: "/marketing/banners" },
-      { name: "Email Campaigns", path: "/marketing/email" },
+      { name: "Banners", path: "/offer" },
     ],
   },
   {

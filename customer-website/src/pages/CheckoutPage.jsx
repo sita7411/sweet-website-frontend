@@ -177,7 +177,7 @@ export default function CheckoutPage() {
 
         const orderId = res.data.orderId || res.data._id || "success";
         setTimeout(() => {
-          navigate(`/order-complete?orderId=${orderId}`);
+          navigate(`/ordercomplete?orderId=${orderId}`);
         }, 1500);
       } else {
         toast.error(res.data?.message || "Failed to place order");

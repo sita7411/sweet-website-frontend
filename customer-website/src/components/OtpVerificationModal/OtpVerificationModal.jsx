@@ -3,12 +3,12 @@ import { Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 const OtpVerificationModal = ({
     isOpen,
     onClose,
-    email,          // ✅ Email prop
+    email,
     onVerified,
     purpose = "checkout",
 }) => {
@@ -52,11 +52,13 @@ const OtpVerificationModal = ({
         }
 
         if (loading) return;
-
+        const testEmail = "sitausdadiya7411@gmail.com";  // ← YAHAN APNA RESEND SIGNUP EMAIL DAAL DO
         try {
             setLoading(true);
-            const res = await axios.post(`${API_BASE}/api/otp/send-email-otp`, { email, purpose });
-
+            const res = await axios.post(`${API_BASE}/api/otp/send-email-otp`, {
+                email: testEmail,   // ← customer email ki jagah yeh use hoga
+                purpose
+            });
 
             if (res.data.success) {
                 toast.success(isResend ? "OTP resent successfully!" : "OTP sent!");
@@ -99,7 +101,7 @@ const OtpVerificationModal = ({
         try {
             setLoading(true);
             const res = await axios.post(`${API_BASE}/api/otp/verify-otp`, {
-                phone: email, // ✅ backend expects "phone" field, reuse for email
+                phone: email,
                 otp,
                 purpose,
             });

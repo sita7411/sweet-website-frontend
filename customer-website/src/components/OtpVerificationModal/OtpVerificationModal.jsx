@@ -70,11 +70,13 @@ const OtpVerificationModal = ({
 
       // ──── CORRECT ENDPOINT ────
       await axios.post(`${API_BASE}/api/otp/send-email-otp`, {
-        identifier: sendToEmail,   // consistent with backend
+        email: sendToEmail,
         purpose,
       });
 
-      toast.success(isResend ? "OTP resent successfully!" : "OTP sent successfully!");
+      toast.success(
+        isResend ? "OTP resent successfully!" : "OTP sent successfully!",
+      );
       setOtpSent(true);
       setResendDisabled(true);
       setCountdown(60);
@@ -118,7 +120,7 @@ const OtpVerificationModal = ({
 
       if (res.data?.success) {
         toast.success("Email verified successfully!");
-        onVerified();   // This should trigger order placement
+        onVerified(); // This should trigger order placement
         onClose();
       } else {
         toast.error(res.data?.message || "Invalid or expired OTP");
@@ -139,7 +141,10 @@ const OtpVerificationModal = ({
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
     setOtp(pasted);
     if (pasted.length > 0) {
       inputRefs.current[Math.min(pasted.length - 1, 5)]?.focus();
@@ -194,9 +199,11 @@ const OtpVerificationModal = ({
             onClick={verifyOtp}
             disabled={loading || otp.length !== 6}
             className={`w-full py-3.5 rounded-xl font-bold text-white text-lg transition flex items-center justify-center gap-2 shadow-sm
-              ${loading || otp.length !== 6
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#6b3f26] hover:bg-[#8b5e3c] active:bg-[#5a351f]"}`}
+              ${
+                loading || otp.length !== 6
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#6b3f26] hover:bg-[#8b5e3c] active:bg-[#5a351f]"
+              }`}
           >
             {loading ? (
               <>
@@ -213,9 +220,11 @@ const OtpVerificationModal = ({
               onClick={() => sendOtp(true)}
               disabled={resendDisabled || loading}
               className={`font-medium transition
-                ${resendDisabled
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-[#6b3f26] hover:underline"}`}
+                ${
+                  resendDisabled
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-[#6b3f26] hover:underline"
+                }`}
             >
               {resendDisabled ? `Resend OTP in ${countdown}s` : "Resend OTP"}
             </button>

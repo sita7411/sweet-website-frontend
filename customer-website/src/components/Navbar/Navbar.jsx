@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,7 +24,14 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const isLoggedIn = !!user;
 
-  const { cartItems, updateQty, removeFromCart, getCartCount, getCartTotal, wishlistItems } = useShop();
+  const {
+    cartItems,
+    updateQty,
+    removeFromCart,
+    getCartCount,
+    getCartTotal,
+    wishlistItems,
+  } = useShop();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -65,7 +72,9 @@ export default function Navbar() {
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "backdrop-blur bg-[var(--bg-main)]/90 shadow-md" : "bg-[var(--bg-main)]"
+        scrolled
+          ? "backdrop-blur bg-[var(--bg-main)]/90 shadow-md"
+          : "bg-[var(--bg-main)]"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 h-[90px] flex items-center justify-between">
@@ -235,8 +244,13 @@ export default function Navbar() {
               className="fixed top-0 left-0 h-screen w-full sm:w-[80%] bg-[var(--bg-card)] z-50 flex flex-col"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-[var(--text-main)]">Menu</h2>
-                <button aria-label="Close Menu" onClick={() => setMobileMenuOpen(false)}>
+                <h2 className="text-lg font-semibold text-[var(--text-main)]">
+                  Menu
+                </h2>
+                <button
+                  aria-label="Close Menu"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   <X size={26} className="text-[var(--primary)]" />
                 </button>
               </div>
@@ -286,6 +300,7 @@ export default function Navbar() {
       </AnimatePresence>
 
       {/* Cart Slideover */}
+      {/* Cart Slideover */}
       <AnimatePresence>
         {cartOpen && (
           <>
@@ -308,100 +323,138 @@ export default function Navbar() {
                 <h2 className="text-xl md:text-lg font-semibold text-[var(--text-main)]">
                   Your Cart ({getCartCount()})
                 </h2>
-                <button aria-label="Close Cart" onClick={() => setCartOpen(false)}>
+                <button
+                  aria-label="Close Cart"
+                  onClick={() => setCartOpen(false)}
+                >
                   <X size={26} className="text-[var(--primary)]" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-4 py-6 md:px-5 md:py-4 space-y-6 md:space-y-5">
+              <div className="flex-1 overflow-y-auto px-5 py-8 md:py-6">
                 {cartItems.length === 0 ? (
-                  <div className="text-center py-12 text-[var(--text-muted)]">
-                    <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" strokeWidth={1.5} />
-                    <p className="text-base">Your cart is empty.</p>
+                  <div className="h-full flex flex-col items-center justify-center text-center gap-6 px-4">
+                    <img
+                      src="/empty-cart.png"
+                      alt="Empty Cart"
+                      className="w-40 h-40 sm:w-48 sm:h-48 object-contain opacity-90"
+                    />
+                    <div>
+                      <p className="text-xl sm:text-2xl font-semibold text-[var(--text-main)]">
+                        Your cart is empty
+                      </p>
+                      <p className="text-sm sm:text-base text-[var(--text-muted)] mt-3 max-w-xs">
+                        Looks like you haven't added any chikkis yet. Let's find
+                        something delicious!
+                      </p>
+                    </div>
                     <button
                       onClick={() => {
                         setCartOpen(false);
                         navigate("/shop");
                       }}
-                      className="mt-6 px-8 py-3 bg-[var(--primary)] text-white rounded-full font-medium hover:opacity-90 transition"
+                      className="mt-4 px-10 py-3.5 bg-[var(--primary)] text-white rounded-xl font-semibold shadow-md hover:brightness-110 transition active:scale-95"
                     >
-                      Continue Shopping
+                      Shop Chikkis Now
                     </button>
                   </div>
                 ) : (
-                  cartItems.map((item) => (
-                    <div
-                      key={`${item.productId}-${item.weight}`}
-                      className="flex gap-4 pb-5 border-b last:border-b-0 last:pb-0"
-                    >
-                      <img
-                        src={item.image || "/placeholder-product.jpg"}
-                        alt={item.name}
-                        className="w-20 h-20 md:w-16 md:h-16 rounded-xl bg-[var(--bg-soft)] object-contain flex-shrink-0"
-                      />
-                      <div className="flex-1">
-                        <h4 className="text-base md:text-sm font-semibold text-[var(--text-main)]">
-                          {item.name}
-                        </h4>
-                        <p className="text-sm md:text-xs text-[var(--text-muted)] mt-1">
-                          Weight: {item.weight}
-                        </p>
+                  <div className="space-y-6 md:space-y-5">
+                    {cartItems.map((item) => (
+                      <div
+                        key={`${item.productId}-${item.weight}`}
+                        className="flex gap-4 pb-5 border-b last:border-b-0 last:pb-0"
+                      >
+                        <img
+                          src={item.image || "/placeholder-product.jpg"}
+                          alt={item.name}
+                          className="w-20 h-20 md:w-18 md:h-18 rounded-xl bg-[var(--bg-soft)] object-contain flex-shrink-0"
+                        />
+                        <div className="flex-1">
+                          <h4 className="text-base md:text-sm font-semibold text-[var(--text-main)] line-clamp-2">
+                            {item.name}
+                          </h4>
+                          <p className="text-sm md:text-xs text-[var(--text-muted)] mt-1">
+                            {item.weight}
+                          </p>
 
-                        <div className="flex items-center justify-between mt-3">
-                          <span className="text-lg md:text-base font-semibold text-[var(--text-main)]">
-                            ₹{(item.price * item.qty).toFixed(0)}
-                          </span>
-                          <div className="flex items-center border rounded-full overflow-hidden">
-                            <button
-                              onClick={() => updateQty(item.productId, item.weight, item.qty - 1)}
-                              className="px-4 py-2 md:px-3 md:py-1 text-lg md:text-base hover:bg-[var(--primary)] hover:text-white transition"
-                            >
-                              −
-                            </button>
-                            <span className="px-5 md:px-4 text-base md:text-sm font-medium">
-                              {item.qty}
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-lg md:text-base font-semibold text-[var(--text-main)]">
+                              ₹{(item.price * item.qty).toFixed(0)}
                             </span>
-                            <button
-                              onClick={() => updateQty(item.productId, item.weight, item.qty + 1)}
-                              className="px-4 py-2 md:px-3 md:py-1 text-lg md:text-base hover:bg-[var(--primary)] hover:text-white transition"
-                            >
-                              +
-                            </button>
+                            <div className="flex items-center border rounded-full overflow-hidden bg-white">
+                              <button
+                                onClick={() =>
+                                  updateQty(
+                                    item.productId,
+                                    item.weight,
+                                    item.qty - 1,
+                                  )
+                                }
+                                className="px-4 py-2 md:px-3 md:py-1.5 text-lg md:text-base hover:bg-[var(--primary)] hover:text-white transition"
+                              >
+                                −
+                              </button>
+                              <span className="px-5 md:px-4 text-base md:text-sm font-medium min-w-[2.5rem] text-center">
+                                {item.qty}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  updateQty(
+                                    item.productId,
+                                    item.weight,
+                                    item.qty + 1,
+                                  )
+                                }
+                                className="px-4 py-2 md:px-3 md:py-1.5 text-lg md:text-base hover:bg-[var(--primary)] hover:text-white transition"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                        </div>
 
-                        <button
-                          onClick={() => removeFromCart(item.productId, item.weight)}
-                          className="text-sm text-red-600 mt-2 hover:underline block"
-                        >
-                          Remove
-                        </button>
+                          <button
+                            onClick={() =>
+                              removeFromCart(item.productId, item.weight)
+                            }
+                            className="text-sm text-red-600 mt-2 hover:underline block"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
 
               {cartItems.length > 0 && (
-                <div className="border-t px-5 py-5 md:py-4 space-y-4">
-                  <div className="flex justify-between text-base md:text-sm font-semibold text-[var(--text-main)]">
+                <div className="border-t px-5 py-6 md:py-5 space-y-5">
+                  <div className="flex justify-between text-lg md:text-base font-semibold text-[var(--text-main)]">
                     <span>Subtotal</span>
                     <span>₹{cartSubtotal.toFixed(0)}</span>
                   </div>
 
-                  <div className="bg-[var(--bg-soft)] rounded-xl p-4 md:p-3 space-y-2 text-sm">
+                  {/* Optional: keep your delivery info block if you like it */}
+                  <div className="bg-[var(--bg-soft)] rounded-xl p-4 space-y-2.5 text-sm">
                     <div className="flex items-center gap-2 font-semibold text-[var(--text-main)]">
                       <Truck size={18} className="text-[var(--primary)]" />
                       Delivery Information
                     </div>
                     <div className="flex items-start gap-2 text-[var(--text-muted)]">
-                      <Clock size={16} className="mt-1 text-[var(--secondary)]" />
+                      <Clock
+                        size={16}
+                        className="mt-1 text-[var(--secondary)]"
+                      />
                       <span>
                         Estimated delivery in <b>3–5 business days</b>
                       </span>
                     </div>
                     <div className="flex items-start gap-2 text-[var(--text-muted)]">
-                      <ShieldCheck size={16} className="mt-1 text-[var(--secondary)]" />
+                      <ShieldCheck
+                        size={16}
+                        className="mt-1 text-[var(--secondary)]"
+                      />
                       <span>
                         Free delivery on orders above <b>₹499</b>
                       </span>
@@ -413,7 +466,7 @@ export default function Navbar() {
                       setCartOpen(false);
                       navigate("/checkout");
                     }}
-                    className="w-full bg-[var(--primary)] text-white py-4 md:py-3 rounded-xl font-semibold hover:opacity-90 transition text-base md:text-sm"
+                    className="w-full bg-[var(--primary)] text-white py-4 rounded-xl font-semibold hover:brightness-110 transition text-base shadow-md"
                   >
                     Proceed to Checkout
                   </button>
@@ -423,15 +476,10 @@ export default function Navbar() {
                       setCartOpen(false);
                       navigate("/cart");
                     }}
-                    className="w-full border border-[var(--primary)] text-[var(--primary)] py-3 md:py-2 rounded-xl text-sm hover:bg-[var(--primary)] hover:text-white transition"
+                    className="w-full border border-[var(--primary)] text-[var(--primary)] py-3.5 rounded-xl font-medium hover:bg-[var(--primary)] hover:text-white transition"
                   >
                     View Full Cart
                   </button>
-
-                  <p className="flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] pt-2">
-                    <ShieldCheck size={14} className="text-[var(--primary)]" />
-                    Secure checkout · Easy returns · Trusted quality
-                  </p>
                 </div>
               )}
             </motion.div>

@@ -67,7 +67,7 @@ export default function CheckoutPage() {
               cleanedPhone = String(user.phone).replace(/\D/g, '');
             }
 
-            // Limit to 10 digits (remove leading 91 or 0 if present)
+            // Limit to 10 digits 
             if (cleanedPhone.length > 10) {
               if (cleanedPhone.startsWith('91')) {
                 cleanedPhone = cleanedPhone.slice(2);
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
 
         const orderId = res.data.orderId || res.data._id || "success";
         setTimeout(() => {
-          navigate(`/order-complete?orderId=${orderId}`);
+          navigate(`/ordercomplete?orderId=${orderId}`);
         }, 1500);
       } else {
         toast.error(res.data?.message || "Failed to place order");

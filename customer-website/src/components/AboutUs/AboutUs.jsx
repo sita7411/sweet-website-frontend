@@ -56,7 +56,7 @@ const AboutUs = () => {
             transition={{ duration: 0.65 }}
             className="text-[var(--text-muted)] text-lg leading-relaxed mt-7"
           >
-            Our chikki celebrates generations of craftsmanship — where
+            Our chikkis celebrates generations of craftsmanship — where
             time-honored recipes meet refined modern techniques.
           </motion.p>
 

@@ -8,7 +8,7 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 const OtpVerificationModal = ({
     isOpen,
     onClose,
-    email,
+    email,          
     onVerified,
     purpose = "checkout",
 }) => {
@@ -20,14 +20,23 @@ const OtpVerificationModal = ({
 
     const inputRefs = useRef([]);
 
-    // Send OTP on open
+    /* ───────────── Send OTP on modal open ───────────── */
+    useEffect(() => {
+        if (isOpen) {
+            setOtp("");
+            setOtpSent(false);
+            setResendDisabled(true);
+            setCountdown(60);
+        }
+    }, [isOpen]);
+
     useEffect(() => {
         if (isOpen && !otpSent) {
             sendOtp(false);
         }
-    }, [isOpen]);
+    }, [isOpen, otpSent]);
 
-    // Countdown for resend
+    /* ───────────── Resend countdown ───────────── */
     useEffect(() => {
         if (!resendDisabled) return;
 
@@ -45,6 +54,7 @@ const OtpVerificationModal = ({
         return () => clearInterval(timer);
     }, [resendDisabled]);
 
+    /* ───────────── SEND OTP ───────────── */
     const sendOtp = async (isResend = false) => {
         if (!email || !email.includes("@")) {
             toast.error("Valid email required");
@@ -52,46 +62,36 @@ const OtpVerificationModal = ({
         }
 
         if (loading) return;
-        const testEmail = "sitausdadiya7411@gmail.com";  // ← YAHAN APNA RESEND SIGNUP EMAIL DAAL DO
+
         try {
             setLoading(true);
-            const res = await axios.post(`${API_BASE}/api/otp/send-email-otp`, {
-                email: testEmail,   // ← customer email ki jagah yeh use hoga
-                purpose
+
+            const sendToEmail = email.trim().toLowerCase();
+
+            await axios.post(`${API_BASE}/api/otp/send-email-otp`, {
+                email: sendToEmail,
+                purpose,
             });
 
-            if (res.data.success) {
-                toast.success(isResend ? "OTP resent successfully!" : "OTP sent!");
-                setOtpSent(true);
-                setResendDisabled(true);
-                setCountdown(60);
-                setOtp("");
+            toast.success(isResend ? "OTP resent successfully!" : "OTP sent!");
+            setOtpSent(true);
+            setResendDisabled(true);
+            setCountdown(60);
+            setOtp("");
 
-                setTimeout(() => {
-                    inputRefs.current[0]?.focus();
-                }, 300);
-            }
+            setTimeout(() => {
+                inputRefs.current[0]?.focus();
+            }, 300);
         } catch (err) {
-            const msg = err.response?.data?.message;
-
-            if (msg?.includes("wait") || msg?.includes("cooldown")) {
-                toast.warn(msg);
-                const match = msg.match(/(\d+)\s*seconds?/);
-                if (match) {
-                    const sec = parseInt(match[1], 10);
-                    if (sec > 0 && sec < 120) {
-                        setResendDisabled(true);
-                        setCountdown(sec);
-                    }
-                }
-            } else {
-                toast.error(msg || "Failed to send OTP. Try again.");
-            }
+            const msg = err.response?.data?.message || "Failed to send OTP";
+            toast.error(msg);
+            console.error("[OTP SEND ERROR]", err.response?.data || err.message);
         } finally {
             setLoading(false);
         }
     };
 
+    /* ───────────── VERIFY OTP ───────────── */
     const verifyOtp = async () => {
         if (otp.length !== 6) {
             toast.error("Please enter complete 6-digit OTP");
@@ -100,42 +100,37 @@ const OtpVerificationModal = ({
 
         try {
             setLoading(true);
+
+            const verifyEmail = email.trim().toLowerCase();
+
             const res = await axios.post(`${API_BASE}/api/otp/verify-otp`, {
-                phone: email,
+                identifier: verifyEmail,
                 otp,
                 purpose,
             });
 
-            if (res.data.success) {
+            if (res.data?.success) {
                 toast.success("Email verified successfully!");
                 onVerified();
                 onClose();
             } else {
-                toast.error(res.data.message || "Invalid OTP");
+                toast.error(res.data?.message || "Invalid OTP");
             }
         } catch (err) {
-            const msg = err.response?.data?.message;
-            if (msg?.includes("attempts") || msg?.includes("Too many")) {
-                toast.error(msg);
-                setResendDisabled(true);
-                setCountdown(60);
-            } else {
-                toast.error(msg || "Verification failed. Please try again.");
-            }
+            const msg = err.response?.data?.message || "Verification failed";
+            toast.error(msg);
+            console.error("[OTP VERIFY ERROR]", err.response?.data || err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // Paste handler
+    /* ───────────── Paste OTP ───────────── */
     const handlePaste = (e) => {
         e.preventDefault();
         const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-        if (pasted.length > 0) {
-            setOtp(pasted);
-            const nextFocus = Math.min(pasted.length, 5);
-            inputRefs.current[nextFocus]?.focus();
-        }
+        setOtp(pasted);
+        inputRefs.current[Math.min(pasted.length, 5)]?.focus();
     };
 
     if (!isOpen) return null;
@@ -154,40 +149,39 @@ const OtpVerificationModal = ({
                 {/* Body */}
                 <div className="p-6 space-y-6">
                     <div className="flex justify-center gap-3" onPaste={handlePaste}>
-                        {Array(6).fill(0).map((_, i) => (
-                            <input
-                                key={i}
-                                ref={(el) => (inputRefs.current[i] = el)}
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                maxLength={1}
-                                value={otp[i] || ""}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/, "");
-                                    const newOtp = otp.split("");
-                                    newOtp[i] = val;
-                                    setOtp(newOtp.join("").slice(0, 6));
-                                    if (val && i < 5) inputRefs.current[i + 1]?.focus();
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Backspace" && !otp[i] && i > 0) {
-                                        inputRefs.current[i - 1]?.focus();
-                                    }
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-[#6b3f26] focus:outline-none focus:ring-2 focus:ring-[#6b3f26]/30 transition"
-                            />
-                        ))}
+                        {Array(6)
+                            .fill(0)
+                            .map((_, i) => (
+                                <input
+                                    key={i}
+                                    ref={(el) => (inputRefs.current[i] = el)}
+                                    type="text"
+                                    maxLength={1}
+                                    value={otp[i] || ""}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, "");
+                                        const newOtp = otp.split("");
+                                        newOtp[i] = val;
+                                        setOtp(newOtp.join("").slice(0, 6));
+                                        if (val && i < 5) inputRefs.current[i + 1]?.focus();
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Backspace" && !otp[i] && i > 0) {
+                                            inputRefs.current[i - 1]?.focus();
+                                        }
+                                    }}
+                                    className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-[#6b3f26] focus:outline-none"
+                                />
+                            ))}
                     </div>
 
                     <button
                         onClick={verifyOtp}
                         disabled={loading || otp.length !== 6}
-                        className={`w-full py-3.5 rounded-xl font-bold text-white text-lg transition flex items-center justify-center gap-2 shadow-sm
+                        className={`w-full py-3.5 rounded-xl font-bold text-white text-lg transition flex items-center justify-center gap-2
               ${loading || otp.length !== 6
                                 ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-[#6b3f26] hover:bg-[#8b5e3c] active:bg-[#5a351f]"}`}
+                                : "bg-[#6b3f26] hover:bg-[#8b5e3c]"}`}
                     >
                         {loading ? (
                             <>
@@ -199,14 +193,14 @@ const OtpVerificationModal = ({
                         )}
                     </button>
 
-                    <div className="text-center text-sm pt-2">
+                    <div className="text-center text-sm">
                         <button
                             onClick={() => sendOtp(true)}
                             disabled={resendDisabled || loading}
-                            className={`font-medium transition-colors
-                ${resendDisabled || loading
+                            className={`font-medium
+                ${resendDisabled
                                     ? "text-gray-400 cursor-not-allowed"
-                                    : "text-[#6b3f26] hover:text-[#8b5e3c] underline-offset-2 hover:underline"}`}
+                                    : "text-[#6b3f26] hover:underline"}`}
                         >
                             {resendDisabled ? `Resend OTP in ${countdown}s` : "Resend OTP"}
                         </button>

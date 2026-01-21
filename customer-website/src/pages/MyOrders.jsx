@@ -1,97 +1,101 @@
-// src/pages/OrdersPage.jsx
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
-import {
-  Star,
-  X,
-  Package,
-  Truck,
-  CheckCircle,
-  ShoppingBag,
-} from "lucide-react";
-import axios from "axios";
+import { Star, UploadCloud, X, AlertCircle, Package, Truck, CheckCircle, Clock, ShoppingBag } from "lucide-react";
 
-// Important: Tell axios to always send cookies (for httpOnly cookie / session auth)
-axios.defaults.withCredentials = true;
+/* ================= ORDERS DATA ================= */
+const orders = [
+  {
+    id: "CHKK1254FD",
+    totalPayment: 633.0,
+    paymentMethod: "Card",
+    estimatedDelivery: "24 February 2026",
+    status: "Accepted",
+    items: [
+      { title: "Pista Chocolate Chikki", flavor: "Chocolate & Pista", weight: "250g", qty: 2, img: "/images/chikki1.png", rate: 100 },
+      { title: "Classic Peanut Chikki", flavor: "Peanut & Jaggery", weight: "200g", qty: 3, img: "/images/chikki2.png", rate: 120 },
+      { title: "Almond Chikki", flavor: "Almond & Honey", weight: "150g", qty: 1, img: "/images/chikki3.png", rate: 150 },
+      { title: "Cashew Dry Fruit Chikki", flavor: "Cashew & Dates", weight: "300g", qty: 2, img: "/images/chikki4.png", rate: 180 },
+    ],
+  },
+  {
+    id: "CHKK7412DF",
+    totalPayment: 250.0,
+    paymentMethod: "Cash",
+    deliveredDate: "12 January 2026",
+    status: "Delivered",
+    items: [
+      { title: "Sesame Chikki", flavor: "Sesame & Jaggery", weight: "250g", qty: 2, img: "/images/chikki5.png", rate: 80 },
+      { title: "Coconut Chikki", flavor: "Coconut & Jaggery", weight: "200g", qty: 1, img: "/images/chikki6.png", rate: 90 },
+    ],
+  },
+];
 
-const API_BASE = import.meta.env.VITE_API_BASE || "https://sweet-backend-nhwt.onrender.com";
-const API_ORDERS_URL = `${API_BASE}/api/orders`;
-
-// ────────────────────────────────────────────────
-// PDF DOWNLOAD FUNCTION
-// ────────────────────────────────────────────────
+/* ================== PDF GENERATION ================== */
 const downloadInvoice = async (order) => {
-  const element = document.getElementById(`invoice-${order._id}`);
-  if (!element) {
-    console.warn("Invoice element not found");
-    return;
-  }
+  const element = document.getElementById(`invoice-${order.id}`);
 
   element.style.display = "block";
   element.style.position = "absolute";
   element.style.left = "-9999px";
   element.style.top = "-9999px";
 
-  // Wait for images
   await Promise.all(
     Array.from(element.querySelectorAll("img")).map(
       (img) =>
         new Promise((resolve) => {
-          if (img.complete && img.naturalHeight !== 0) resolve();
-          else {
-            img.onload = resolve;
-            img.onerror = resolve;
-          }
+          if (img.complete) resolve();
+          else img.onload = img.onerror = resolve;
         })
     )
   );
 
-  try {
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-    });
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+  });
 
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`Invoice-${order.orderNumber || order._id.slice(-8)}.pdf`);
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-  } finally {
-    element.style.display = "none";
-  }
+  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  pdf.save(`Invoice-${order.id}.pdf`);
+
+  element.style.display = "none";
 };
 
-// ────────────────────────────────────────────────
-// INVOICE HIDDEN COMPONENT
-// ────────────────────────────────────────────────
+/* ================== INVOICE COMPONENT ================== */
+// (unchanged - same as before)
 function InvoicePDF({ order }) {
-  const pdfInvoiceDate = order.createdAt
-    ? new Date(order.createdAt).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : "—";
+  const guestNumber = "GST-2026-0045";
+  const pdfInvoiceDate = order.deliveredDate || order.estimatedDelivery;
 
-  const items = order.items || [];
-  const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0);
-  const shipping = order.shippingCharge || 0;
-  const total = subtotal + shipping;
+  const pdfOrderItems = order.items.map((item) => ({
+    title: item.title,
+    unit: item.weight,
+    quantity: item.qty,
+    rate: item.rate,
+    amount: item.qty * item.rate,
+  }));
+
+  const pdfSubtotal = pdfOrderItems.reduce((sum, item) => sum + item.amount, 0);
+  const pdfTotal = pdfSubtotal;
+
+  const totalRowStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "12px",
+    marginBottom: "4px",
+  };
 
   return (
     <div
-      id={`invoice-${order._id}`}
+      id={`invoice-${order.id}`}
       style={{
         position: "absolute",
         left: "-9999px",
@@ -100,26 +104,23 @@ function InvoicePDF({ order }) {
         minHeight: "297mm",
         padding: "18mm",
         backgroundColor: "#ffffff",
-        fontFamily: "Helvetica, Arial, sans-serif",
+        fontFamily: "'Helvetica', 'Arial', sans-serif",
         fontSize: "12px",
         color: "#2e2e2e",
-        boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
+        boxSizing: "border-box",
       }}
     >
       <div style={{ flex: 1 }}>
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderBottom: "2px solid #c63b2f",
-            paddingBottom: "12px",
-            marginBottom: "20px",
-          }}
-        >
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "2px solid #c63b2f",
+          paddingBottom: "12px",
+          marginBottom: "20px",
+        }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <img
               src="/Logo_Marvel.png"
@@ -137,17 +138,23 @@ function InvoicePDF({ order }) {
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <h2 style={{ margin: 0, fontSize: "26px", fontWeight: "700", color: "#c63b2f" }}>
+            <h2 style={{
+              margin: 0,
+              fontSize: "26px",
+              fontWeight: "700",
+              color: "#c63b2f",
+              letterSpacing: "1px",
+            }}>
               INVOICE
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: "10px" }}>
-              Invoice No: <strong>{order.orderNumber || order._id?.slice(-8)}</strong>
+              Invoice No: <strong>{order.id}</strong>
             </p>
             <p style={{ margin: "2px 0", fontSize: "10px" }}>Date: {pdfInvoiceDate}</p>
+            <p style={{ margin: "2px 0", fontSize: "10px" }}>Guest No: {guestNumber}</p>
           </div>
         </div>
 
-        {/* Bill From / Bill To */}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "22px" }}>
           <div style={{ width: "48%" }}>
             <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill From</p>
@@ -158,35 +165,26 @@ function InvoicePDF({ order }) {
             </p>
             <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 99461 37919</p>
           </div>
-
           <div style={{ width: "48%", textAlign: "right" }}>
             <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill To</p>
-            <p style={{ margin: 0 }}>
-              {order.billingDetails?.firstName} {order.billingDetails?.lastName || ""}
-            </p>
+            <p style={{ margin: 0 }}>Customer Name</p>
             <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4" }}>
-              {order.billingDetails?.address || "—"}<br />
-              {order.billingDetails?.city || ""}, {order.billingDetails?.state || ""} –{" "}
-              {order.billingDetails?.pincode || ""}
+              456 Candy Lane<br />
+              Mumbai – 400002
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>
-              {order.billingDetails?.phone || "—"}
-            </p>
+            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 91234 56780</p>
           </div>
         </div>
 
-        {/* Table */}
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginBottom: "22px",
-            fontSize: "11px",
-          }}
-        >
+        <table style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginBottom: "22px",
+          fontSize: "11px",
+        }}>
           <thead>
             <tr style={{ backgroundColor: "#f7f7f7", fontWeight: "700" }}>
-              {["Product", "Qty", "Rate", "Amount"].map((h) => (
+              {["Product", "Qty", "Rate", "Shipping", "Amount"].map((h) => (
                 <th
                   key={h}
                   style={{
@@ -201,150 +199,125 @@ function InvoicePDF({ order }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item, i) => {
-              const amount = (item.price || 0) * (item.qty || 1);
-              return (
-                <tr key={i}>
-                  <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                    <strong>{item.name || "Product"}</strong>
-                    <div style={{ fontSize: "10px", color: "#777" }}>
-                      {item.weight ? `(${item.weight})` : ""}
-                    </div>
-                  </td>
-                  <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
-                    {item.qty || 1}
-                  </td>
-                  <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
-                    ₹{(item.price || 0).toFixed(2)}
-                  </td>
-                  <td style={{ border: "1px solid #ddd", textAlign: "right", paddingRight: "10px" }}>
-                    ₹{amount.toFixed(2)}
-                  </td>
-                </tr>
-              );
-            })}
+            {pdfOrderItems.map((item, idx) => (
+              <tr key={idx}>
+                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                  <strong>{item.title}</strong>
+                  <div style={{ fontSize: "10px", color: "#777" }}>per {item.unit}</div>
+                </td>
+                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
+                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
+                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹0.00</td>
+                <td style={{ border: "1px solid #ddd", textAlign: "right", paddingRight: "10px" }}>
+                  ₹{item.amount.toFixed(2)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
-        {/* Totals */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <div style={{ width: "260px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+            <div style={totalRowStyle}>
               <span>Subtotal</span>
-              <span>₹{subtotal.toFixed(2)}</span>
+              <span>₹{pdfSubtotal.toFixed(2)}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+            <div style={totalRowStyle}>
               <span>Shipping</span>
-              <span>₹{shipping.toFixed(2)}</span>
+              <span>₹0.00</span>
             </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontWeight: "700",
-                fontSize: "14px",
-                borderTop: "2px solid #c63b2f",
-                paddingTop: "6px",
-                marginTop: "6px",
-                color: "#c63b2f",
-              }}
-            >
-              <span>Total</span>
-              <span>₹{total.toFixed(2)}</span>
+            <div style={{
+              ...totalRowStyle,
+              fontWeight: "700",
+              fontSize: "14px",
+              borderTop: "2px solid #c63b2f",
+              paddingTop: "6px",
+              marginTop: "6px",
+              color: "#c63b2f",
+            }}>
+              <span>Total Paid</span>
+              <span>₹{pdfTotal.toFixed(2)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: "10px",
-          color: "#777",
-          borderTop: "1px solid #ddd",
-          paddingTop: "10px",
-          marginTop: "auto",
-        }}
-      >
-        <p>Marvel Crunch Chikki • www.marvelcrunch.com • +91 99461 37919</p>
-        <p>Thank you for your business!</p>
+      <div style={{
+        position: "absolute",
+        bottom: "18mm",
+        left: "18mm",
+        right: "18mm",
+        textAlign: "center",
+        fontSize: "10px",
+        color: "#777",
+        borderTop: "1px solid #ddd",
+        paddingTop: "10px",
+      }}>
+        <p style={{ margin: 0 }}>
+          Marvel Crunch Chikki • www.marvelcrunch.com • +91 99461 37919
+        </p>
+        <p style={{ margin: 0 }}>Thank you for your business!</p>
       </div>
     </div>
   );
 }
 
-// ────────────────────────────────────────────────
-// ORDER STATUS TIMELINE
-// ────────────────────────────────────────────────
+/* ================== ORDER STATUS TIMELINE  ================== */
 function OrderStatusTimeline({ order }) {
-  const statusOrder = [
-    "pending",
-    "placed",
-    "confirmed",
-    "processing",
-    "on the way",
-    "shipped",
-    "delivered",
-  ];
-
-  const currentIdx = statusOrder.indexOf((order.orderStatus || "pending").toLowerCase());
-  const progress = currentIdx >= 0 ? ((currentIdx + 1) / statusOrder.length) * 100 : 0;
-
   const steps = [
-    { label: "Order Placed", icon: ShoppingBag },
-    { label: "Accepted", icon: CheckCircle },
-    { label: "Processing", icon: Package },
-    { label: "On the Way", icon: Truck },
-    { label: "Delivered", icon: CheckCircle },
+    { label: "Order Placed", icon: ShoppingBag, date: "20 Feb 2024", time: "11:05 AM" },
+    { label: "Accepted", icon: CheckCircle, date: "20 Feb 2024", time: "11:45 AM" },
+    { label: "In Progress", icon: Package, date: "Expected", expected: "21 Feb 2024" },
+    { label: "On the Way", icon: Truck, date: "Expected", expected: "22-23 Feb 2024" },
+    { label: "Delivered", icon: CheckCircle, date: "Expected", expected: order.estimatedDelivery || "24 Feb 2024" },
   ];
+
+  let completedUpTo = 1;
+  if (order.status === "Delivered") {
+    completedUpTo = 4;
+    steps[4].date = order.deliveredDate;
+    steps[4].expected = null;
+  } else if (order.status === "Accepted") {
+    completedUpTo = 1;
+  }
 
   return (
     <div className="px-6 py-8 bg-gray-50 border-t border-gray-200">
       <h3 className="text-lg font-semibold mb-6 text-[var(--text-main)]">Order Status</h3>
       <div className="flex items-center justify-between relative">
+        {/* Background Line */}
         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
+        {/* Progress Line */}
         <div
           className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
-          style={{ width: `${progress}%` }}
+          style={{ width: `${(completedUpTo + 1) * 20}%` }}
         />
 
-        {steps.map((step, idx) => {
+        {steps.map((step, index) => {
           const Icon = step.icon;
-          const isCompleted = idx <= currentIdx;
-          const isActive = idx === currentIdx + 1;
+          const isCompleted = index <= completedUpTo;
+          const isActive = index === completedUpTo + 1;
 
           return (
-            <div key={idx} className="flex flex-col items-center relative z-10 flex-1">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
-                  isCompleted
-                    ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
-                    : isActive
-                    ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
-                    : "bg-gray-300 text-gray-500"
-                }`}
-              >
+            <div key={index} className="flex flex-col items-center relative z-10 flex-1">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${isCompleted
+                ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
+                : isActive
+                  ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
+                  : "bg-gray-300 text-gray-500"
+                }`}>
                 <Icon className="w-6 h-6" />
               </div>
-              <div className="mt-4 text-center">
-                <p
-                  className={`text-sm font-medium ${
-                    isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"
-                  }`}
-                >
+              <div className="mt-7 text-center">
+                <p className={`font-medium text-sm ${isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"}`}>
                   {step.label}
                 </p>
-                {idx === 0 && order.createdAt && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    {new Date(order.createdAt).toLocaleDateString("en-IN")}
-                  </p>
-                )}
-                {idx === steps.length - 1 && order.deliveredAt && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    {new Date(order.deliveredAt).toLocaleDateString("en-IN")}
-                  </p>
-                )}
+                <p className="text-xs text-gray-600 mt-1">
+                  {step.date === "Expected" ? "Expected" : step.date}
+                  {step.expected && <><br /><span className="font-medium">{step.expected}</span></>}
+                  {step.time && <><br /><span className="text-xs">{step.time}</span></>}
+                  {step.date !== "Expected" && !step.time && !step.expected && <br />}
+                </p>
               </div>
             </div>
           );
@@ -354,319 +327,229 @@ function OrderStatusTimeline({ order }) {
   );
 }
 
-// ────────────────────────────────────────────────
-// REVIEW MODAL (demo version)
-// ────────────────────────────────────────────────
+/* ================== REVIEW MODAL ================== */
 function ReviewModal({ order, isOpen, onClose }) {
-  const [rating, setRating] = useState(0);
-  const [title, setTitle] = useState("");
-  const [comment, setComment] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    rating: 0,
+    title: "",
+    details: "",
+    photo: [],
+  });
+  const [showThankYou, setShowThankYou] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (rating === 0) {
-      alert("Please select a rating");
-      return;
-    }
-    console.log("Review submitted (demo):", {
-      orderId: order._id,
-      rating,
-      title,
-      comment,
-    });
-    alert("Review submitted! (demo mode)");
-    onClose();
+    if (!formData.rating) return alert("Please select a rating!");
+
+    setShowThankYou(true);
+    setTimeout(() => {
+      setShowThankYou(false);
+      onClose();
+      setFormData({ name: "", email: "", rating: 0, title: "", details: "", photo: [] });
+    }, 2500);
   };
 
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={onClose}
-      >
+      {isOpen && (
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
         >
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold">
-                Review Order #{order.orderNumber || order._id?.slice(-6)}
-              </h3>
-              <button onClick={onClose}>
-                <X className="w-6 h-6 text-gray-500 hover:text-gray-700" />
-              </button>
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10">
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="p-6 sm:p-8">
+              <h3 className="text-2xl font-semibold mb-2">Add Review for Order #{order?.id}</h3>
+              <p className="text-[var(--text-muted)] mb-6">Share your experience with this order</p>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <input type="text" placeholder="Name *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                  <input type="email" placeholder="Email *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium">Your Rating *</label>
+                  <div className="flex space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        fill="currentColor"
+                        className={`w-10 h-10 cursor-pointer transition ${star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"}`}
+                        onClick={() => setFormData({ ...formData, rating: star })}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <input type="text" placeholder="Review Title *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+
+                <textarea placeholder="Write your detailed review *" required rows="5" className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
+
+                <div>
+                  <label className="block mb-2 font-medium">Add Photos / Videos (Optional)</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition" onClick={() => document.getElementById("reviewFileInput").click()}>
+                    <UploadCloud className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500 font-medium">Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span></p>
+                    {formData.photo.length > 0 && (
+                      <div className="flex flex-wrap gap-3 mt-4 justify-center">
+                        {formData.photo.map((file, idx) => (
+                          <div key={idx} className="relative w-28 h-28 rounded overflow-hidden border">
+                            {file.type.startsWith("image/") ? <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" /> : <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" controls />}
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, photo: formData.photo.filter((_, i) => i !== idx) }); }} className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">×</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <input id="reviewFileInput" type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => setFormData({ ...formData, photo: [...formData.photo, ...Array.from(e.target.files)] })} />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition">Cancel</button>
+                  <button type="submit" className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition">Submit Review</button>
+                </div>
+              </form>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block mb-2 font-medium">Rating</label>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-8 h-8 cursor-pointer transition ${
-                        star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                      }`}
-                      onClick={() => setRating(star)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium">Review Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  placeholder="Great taste, fast delivery!"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 font-medium">Your Review</label>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={5}
-                  className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  placeholder="Write your experience here..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-6 py-2 border rounded-lg hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-                >
-                  Submit Review
-                </button>
-              </div>
-            </form>
-          </div>
+            <AnimatePresence>
+              {showThankYou && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl">
+                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
+                    <img src="/review.png" alt="Thank you" className="w-32 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-[var(--secondary)] mb-2">Thank You!</h3>
+                    <p className="text-[var(--text-muted)]">Your review has been submitted successfully.</p>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 }
 
-// ────────────────────────────────────────────────
-// MAIN ORDERS PAGE COMPONENT
-// ────────────────────────────────────────────────
+
+/* ================== ORDERS PAGE ================== */
 export default function OrdersPage() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [reviewOrder, setReviewOrder] = useState(null);
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await axios.get(API_ORDERS_URL);
-
-        setOrders(response.data.data || response.data.orders || response.data || []);
-      } catch (err) {
-        console.error("Failed to fetch orders:", err);
-        setError(
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to load orders. Please make sure you are logged in."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading your orders...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-600 text-xl text-center px-4">{error}</div>
-      </div>
-    );
-  }
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative h-80 md:h-[50vh] flex items-center justify-center overflow-hidden">
-        <img
-          src="/login.png"
-          alt="background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-600/50 to-amber-600/40" />
-        <div className="relative z-10 text-center text-white px-4">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-6xl font-extrabold drop-shadow-lg"
-          >
+    <div className="min-h-screen">
+      {/* HERO */}
+      <section className="relative h-[50vh] flex items-center justify-center overflow-hidden">
+        <img src="/login.png" alt="Chikki Banner" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-[var(--secondary)]/30"></div>
+        <div className="relative z-10 text-center px-4">
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">
             My Orders
           </motion.h1>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-4 text-lg"
-          >
-            <Link to="/" className="hover:underline">
-              Home
-            </Link>{" "}
-            <span className="mx-3">/</span> My Orders
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mt-6 flex justify-center items-center gap-3 text-white text-sm sm:text-base">
+            <Link to="/" className="hover:text-[var(--text-main)] hover:font-bold hover:underline font-medium transition-all">Home</Link>
+            <span className="font-bold">\\</span>
+            <span className="font-semibold">My Orders</span>
           </motion.div>
         </div>
       </section>
 
-      {/* Orders List */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <h2 className="text-3xl font-bold mb-8">Your Orders ({orders.length})</h2>
+      {/* ORDERS LIST */}
+      <div className="max-w-6xl mx-auto px-4 py-12 space-y-10">
+        <h2 className="text-2xl font-bold text-[var(--text-main)]">Orders ({orders.length})</h2>
 
-        {orders.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            No orders found. Start shopping now!
-          </div>
-        ) : (
-          orders.map((order) => (
-            <div
-              key={order._id}
-              className="mb-10 bg-white rounded-xl shadow-md overflow-hidden border border-orange-100"
-            >
-              {/* Order Header */}
-              <div className="bg-orange-50 px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm md:text-base">
-                <div>
-                  <div className="font-semibold">Order ID</div>
-                  <div>{order.orderNumber || order._id?.slice(-8)}</div>
-                </div>
-                <div>
-                  <div className="font-semibold">Total</div>
-                  <div>₹{(order.totalAmount || 0).toFixed(2)}</div>
-                </div>
-                <div>
-                  <div className="font-semibold">Payment</div>
-                  <div className="uppercase">{order.paymentMethod || "—"}</div>
-                </div>
-                <div>
-                  <div className="font-semibold">
-                    {order.orderStatus === "delivered" ? "Delivered" : "Placed"}
-                  </div>
+        {orders.map((order) => (
+          <div
+            key={order.id}
+            id={`order-${order.id}`}
+            className="bg-[var(--bg-card)] border border-[var(--secondary)] rounded-xl shadow-sm overflow-hidden"
+          >
+            {/* ORDER HEADER */}
+            <div className="bg-[var(--accent)] text-[var(--text-main)] px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm md:text-base">
+              <div><span className="font-semibold">Order ID</span><br />#{order.id}</div>
+              <div><span className="font-semibold">Total</span><br />₹{order.totalPayment.toFixed(2)}</div>
+              <div><span className="font-semibold">Payment</span><br />{order.paymentMethod}</div>
+              <div><span className="font-semibold">{order.estimatedDelivery ? "Estimated Delivery" : "Delivered Date"}</span><br />{order.estimatedDelivery || order.deliveredDate}</div>
+            </div>
+
+            {/* ORDER ITEMS */}
+            <div className="divide-y divide-gray-200">
+              {order.items.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-4 px-6 py-4">
+                  <img src={item.img} alt={item.title} className="w-20 h-20 rounded-lg object-cover" />
                   <div>
-                    {new Date(order.createdAt).toLocaleDateString("en-IN")}
+                    <h3 className="font-semibold text-[var(--text-main)]">{item.title}</h3>
+                    <p className="text-sm text-[var(--text-muted)]">Flavor: {item.flavor} | Weight: {item.weight} | Qty: {item.qty}</p>
                   </div>
                 </div>
-              </div>
+              ))}
+            </div>
 
-              {/* Order Items */}
-              <div className="divide-y">
-                {order.items?.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-4 p-6">
-                    <img
-                      src={item.image || "/placeholder-chikki.jpg"}
-                      alt={item.name}
-                      className="w-20 h-20 object-cover rounded-lg border"
-                    />
-                    <div>
-                      <h4 className="font-semibold">{item.name}</h4>
-                      <p className="text-sm text-gray-600">
-                        {item.weight} × {item.qty}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {/* NEW: ORDER STATUS TIMELINE */}
+            <OrderStatusTimeline order={order} />
 
-              <OrderStatusTimeline order={order} />
-
-              {/* Actions */}
-              <div className="px-6 py-5 flex flex-wrap justify-between items-center gap-4 border-t">
-                <div
-                  className={`px-4 py-1 rounded-full text-sm font-medium ${
-                    order.orderStatus === "delivered"
-                      ? "bg-green-100 text-green-700"
-                      : order.orderStatus === "cancelled" || order.orderStatus === "rejected"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  {order.orderStatus?.toUpperCase() || "PENDING"}
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  {order.orderStatus !== "delivered" && (
-                    <button
-                      onClick={() =>
-                        document.getElementById(`order-${order._id}`)?.scrollIntoView({
+            {/* STATUS & ACTIONS */}
+            <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${order.status === "Delivered" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>
+                {order.status}
+              </span>
+              <div className="flex flex-wrap gap-3">
+                {order.status !== "Delivered" && (
+                  <button
+                    onClick={() => {
+                      document
+                        .getElementById(`order-${order.id}`)
+                        ?.scrollIntoView({
                           behavior: "smooth",
                           block: "center",
-                        })
-                      }
-                      className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
-                    >
-                      Track Order
-                    </button>
-                  )}
-
-                  {order.orderStatus === "delivered" && (
-                    <button
-                      onClick={() => setReviewOrder(order)}
-                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                    >
-                      Add Review
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => downloadInvoice(order)}
-                    className="px-6 py-2 border border-orange-500 text-orange-600 rounded-lg hover:bg-orange-50 transition"
+                        });
+                    }}
+                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
                   >
-                    Download Invoice
+                    Track Order
                   </button>
-                </div>
-              </div>
+                )}
 
-              {/* Hidden Invoice PDF */}
-              <InvoicePDF order={order} />
+                {order.status === "Delivered" && (
+                  <button
+                    onClick={() => setSelectedOrderForReview(order)}
+                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
+                  >
+                    Add Review
+                  </button>
+                )}
+                <button
+                  className="px-6 py-2 border border-[var(--secondary)] text-[var(--text-main)] rounded hover:bg-[var(--bg-soft)] transition"
+                  onClick={() => downloadInvoice(order)}
+                >
+                  Invoice PDF
+                </button>
+              </div>
             </div>
-          ))
-        )}
+
+            {/* HIDDEN PDF DIV */}
+            <InvoicePDF order={order} />
+          </div>
+        ))}
       </div>
 
-      {/* Review Modal */}
-      <ReviewModal
-        order={reviewOrder}
-        isOpen={!!reviewOrder}
-        onClose={() => setReviewOrder(null)}
-      />
+      {/* Modals */}
+      <ReviewModal order={selectedOrderForReview} isOpen={!!selectedOrderForReview} onClose={() => setSelectedOrderForReview(null)} />
     </div>
   );
 }

@@ -10,7 +10,8 @@ import axios from "axios";
 import { useShop } from "../context/ShopContext";
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "https://sweet-backend-nhwt.onrender.com/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cartItems, clearCart, fetchCart } = useShop();

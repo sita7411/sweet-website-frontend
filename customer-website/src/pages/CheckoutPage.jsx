@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { CreditCard, Smartphone, Banknote, ShieldCheck, Loader2, CheckCircle } from "lucide-react";
-import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import Features from "../components/Features/Features";
 import { ToastContainer, toast, Slide } from "react-toastify";
@@ -10,8 +9,7 @@ import axios from "axios";
 import { useShop } from "../context/ShopContext";
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
-
+const API_BASE = "https://sweet-backend-nhwt.onrender.com/api";
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cartItems, clearCart, fetchCart } = useShop();

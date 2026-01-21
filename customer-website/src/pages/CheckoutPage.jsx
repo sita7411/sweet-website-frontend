@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { CreditCard, Smartphone, Banknote, ShieldCheck, Loader2, CheckCircle } from "lucide-react";
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from "react-router-dom";
 import Features from "../components/Features/Features";
 import { ToastContainer, toast, Slide } from "react-toastify";

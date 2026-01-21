@@ -1,459 +1,133 @@
-import React, { useState } from "react";
+// src/pages/OrdersPage.jsx
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
-import { Star, UploadCloud, X, AlertCircle, Package, Truck, CheckCircle, Clock, ShoppingBag } from "lucide-react";
+import {
+  Star,
+  UploadCloud,
+  X,
+  Package,
+  Truck,
+  CheckCircle,
+  ShoppingBag,
+} from "lucide-react";
 
-/* ================= ORDERS DATA ================= */
-const orders = [
-  {
-    id: "CHKK1254FD",
-    totalPayment: 633.0,
-    paymentMethod: "Card",
-    estimatedDelivery: "24 February 2026",
-    status: "Accepted",
-    items: [
-      { title: "Pista Chocolate Chikki", flavor: "Chocolate & Pista", weight: "250g", qty: 2, img: "/images/chikki1.png", rate: 100 },
-      { title: "Classic Peanut Chikki", flavor: "Peanut & Jaggery", weight: "200g", qty: 3, img: "/images/chikki2.png", rate: 120 },
-      { title: "Almond Chikki", flavor: "Almond & Honey", weight: "150g", qty: 1, img: "/images/chikki3.png", rate: 150 },
-      { title: "Cashew Dry Fruit Chikki", flavor: "Cashew & Dates", weight: "300g", qty: 2, img: "/images/chikki4.png", rate: 180 },
-    ],
+// ─── API Helper ──────────────────────────────────────────────
+const BASE_URL = import.meta.env.VITE_API_BASE || "https://sweet-backend-nhwt.onrender.com";
+
+const api = {
+  async getMyOrders() {
+    const res = await fetch(`${BASE_URL}/api/orders`, {
+      credentials: "include", // for cookies (JWT or session)
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Error ${res.status}`);
+    }
+    return res.json();
   },
-  {
-    id: "CHKK7412DF",
-    totalPayment: 250.0,
-    paymentMethod: "Cash",
-    deliveredDate: "12 January 2026",
-    status: "Delivered",
-    items: [
-      { title: "Sesame Chikki", flavor: "Sesame & Jaggery", weight: "250g", qty: 2, img: "/images/chikki5.png", rate: 80 },
-      { title: "Coconut Chikki", flavor: "Coconut & Jaggery", weight: "200g", qty: 1, img: "/images/chikki6.png", rate: 90 },
-    ],
-  },
-];
-
-/* ================== PDF GENERATION ================== */
-const downloadInvoice = async (order) => {
-  const element = document.getElementById(`invoice-${order.id}`);
-
-  element.style.display = "block";
-  element.style.position = "absolute";
-  element.style.left = "-9999px";
-  element.style.top = "-9999px";
-
-  await Promise.all(
-    Array.from(element.querySelectorAll("img")).map(
-      (img) =>
-        new Promise((resolve) => {
-          if (img.complete) resolve();
-          else img.onload = img.onerror = resolve;
-        })
-    )
-  );
-
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-  });
-
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF("p", "mm", "a4");
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-  pdf.save(`Invoice-${order.id}.pdf`);
-
-  element.style.display = "none";
 };
 
-/* ================== INVOICE COMPONENT ================== */
-// (unchanged - same as before)
-function InvoicePDF({ order }) {
-  const guestNumber = "GST-2026-0045";
-  const pdfInvoiceDate = order.deliveredDate || order.estimatedDelivery;
+// ─── Your existing InvoicePDF, OrderStatusTimeline, ReviewModal components ───
+// (keep them exactly as you had – I'm not repeating them here to save space)
 
-  const pdfOrderItems = order.items.map((item) => ({
-    title: item.title,
-    unit: item.weight,
-    quantity: item.qty,
-    rate: item.rate,
-    amount: item.qty * item.rate,
-  }));
+function InvoicePDF({ order }) { /* your existing code */ }
+function OrderStatusTimeline({ order }) { /* your existing code */ }
+function ReviewModal({ order, isOpen, onClose }) { /* your existing code */ }
 
-  const pdfSubtotal = pdfOrderItems.reduce((sum, item) => sum + item.amount, 0);
-  const pdfTotal = pdfSubtotal;
+export default function OrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
 
-  const totalRowStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: "12px",
-    marginBottom: "4px",
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await api.getMyOrders();
+
+        // Backend returns { success: true, count, data: [...] }
+        const realOrders = response.data || [];
+
+        // Map backend fields → frontend expected structure
+        const formattedOrders = realOrders.map((o) => ({
+          id: o.orderNumber || o._id.slice(-8).toUpperCase(),
+          totalPayment: o.totalAmount || 0,
+          paymentMethod: o.paymentMethod === "cod" ? "Cash" : "Card",
+          estimatedDelivery: o.estimatedDelivery || null,
+          deliveredDate: o.deliveredDate || null,
+          status: mapStatus(o.orderStatus),
+          items: o.items.map((i) => ({
+            title: i.name,
+            flavor: i.flavor || "", // add if you store flavor
+            weight: i.weight,
+            qty: i.qty,
+            img: i.image || "/images/placeholder.png",
+            rate: i.price,
+          })),
+        }));
+
+        if (mounted) setOrders(formattedOrders);
+      } catch (err) {
+        console.error("Orders fetch error:", err);
+        if (mounted) setError(err.message || "Failed to load orders");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchOrders();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Convert backend status to frontend-friendly text
+  const mapStatus = (status) => {
+    const map = {
+      pending: "Pending",
+      placed: "Placed",
+      confirmed: "Accepted",
+      processing: "Processing",
+      "on the way": "On the Way",
+      shipped: "Shipped",
+      delivered: "Delivered",
+      rejected: "Rejected",
+      cancelled: "Cancelled",
+    };
+    return map[status?.toLowerCase()] || status || "Pending";
   };
 
-  return (
-    <div
-      id={`invoice-${order.id}`}
-      style={{
-        position: "absolute",
-        left: "-9999px",
-        top: "-9999px",
-        width: "210mm",
-        minHeight: "297mm",
-        padding: "18mm",
-        backgroundColor: "#ffffff",
-        fontFamily: "'Helvetica', 'Arial', sans-serif",
-        fontSize: "12px",
-        color: "#2e2e2e",
-        display: "flex",
-        flexDirection: "column",
-        boxSizing: "border-box",
-      }}
-    >
-      <div style={{ flex: 1 }}>
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "2px solid #c63b2f",
-          paddingBottom: "12px",
-          marginBottom: "20px",
-        }}>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <img
-              src="/Logo_Marvel.png"
-              alt="Marvel Crunch"
-              crossOrigin="anonymous"
-              style={{ width: "70px", height: "70px", objectFit: "contain" }}
-            />
-            <div>
-              <h1 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>
-                Marvel Crunch Chikki
-              </h1>
-              <p style={{ margin: 0, fontSize: "10px", color: "#6b3f26" }}>
-                Premium Fresh Chikki & Bakery Products
-              </p>
-            </div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <h2 style={{
-              margin: 0,
-              fontSize: "26px",
-              fontWeight: "700",
-              color: "#c63b2f",
-              letterSpacing: "1px",
-            }}>
-              INVOICE
-            </h2>
-            <p style={{ margin: "4px 0 0", fontSize: "10px" }}>
-              Invoice No: <strong>{order.id}</strong>
-            </p>
-            <p style={{ margin: "2px 0", fontSize: "10px" }}>Date: {pdfInvoiceDate}</p>
-            <p style={{ margin: "2px 0", fontSize: "10px" }}>Guest No: {guestNumber}</p>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "22px" }}>
-          <div style={{ width: "48%" }}>
-            <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill From</p>
-            <p style={{ margin: 0 }}>Marvel Crunch Chikki</p>
-            <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4" }}>
-              Plot No. 133, Shreeji Textile<br />
-              Velenja Sayan Road, Gujarat – 394150
-            </p>
-            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 99461 37919</p>
-          </div>
-          <div style={{ width: "48%", textAlign: "right" }}>
-            <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill To</p>
-            <p style={{ margin: 0 }}>Customer Name</p>
-            <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4" }}>
-              456 Candy Lane<br />
-              Mumbai – 400002
-            </p>
-            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 91234 56780</p>
-          </div>
-        </div>
-
-        <table style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          marginBottom: "22px",
-          fontSize: "11px",
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: "#f7f7f7", fontWeight: "700" }}>
-              {["Product", "Qty", "Rate", "Shipping", "Amount"].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: h === "Product" ? "left" : "center",
-                  }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pdfOrderItems.map((item, idx) => (
-              <tr key={idx}>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                  <strong>{item.title}</strong>
-                  <div style={{ fontSize: "10px", color: "#777" }}>per {item.unit}</div>
-                </td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹0.00</td>
-                <td style={{ border: "1px solid #ddd", textAlign: "right", paddingRight: "10px" }}>
-                  ₹{item.amount.toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <div style={{ width: "260px" }}>
-            <div style={totalRowStyle}>
-              <span>Subtotal</span>
-              <span>₹{pdfSubtotal.toFixed(2)}</span>
-            </div>
-            <div style={totalRowStyle}>
-              <span>Shipping</span>
-              <span>₹0.00</span>
-            </div>
-            <div style={{
-              ...totalRowStyle,
-              fontWeight: "700",
-              fontSize: "14px",
-              borderTop: "2px solid #c63b2f",
-              paddingTop: "6px",
-              marginTop: "6px",
-              color: "#c63b2f",
-            }}>
-              <span>Total Paid</span>
-              <span>₹{pdfTotal.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
+  // ─── UI (exactly same as your original) ─────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-gray-600">Loading your orders...</div>
       </div>
+    );
+  }
 
-      <div style={{
-        position: "absolute",
-        bottom: "18mm",
-        left: "18mm",
-        right: "18mm",
-        textAlign: "center",
-        fontSize: "10px",
-        color: "#777",
-        borderTop: "1px solid #ddd",
-        paddingTop: "10px",
-      }}>
-        <p style={{ margin: 0 }}>
-          Marvel Crunch Chikki • www.marvelcrunch.com • +91 99461 37919
-        </p>
-        <p style={{ margin: 0 }}>Thank you for your business!</p>
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-600 text-xl">{error}</div>
       </div>
-    </div>
-  );
-}
-
-/* ================== ORDER STATUS TIMELINE  ================== */
-function OrderStatusTimeline({ order }) {
-  const steps = [
-    { label: "Order Placed", icon: ShoppingBag, date: "20 Feb 2024", time: "11:05 AM" },
-    { label: "Accepted", icon: CheckCircle, date: "20 Feb 2024", time: "11:45 AM" },
-    { label: "In Progress", icon: Package, date: "Expected", expected: "21 Feb 2024" },
-    { label: "On the Way", icon: Truck, date: "Expected", expected: "22-23 Feb 2024" },
-    { label: "Delivered", icon: CheckCircle, date: "Expected", expected: order.estimatedDelivery || "24 Feb 2024" },
-  ];
-
-  let completedUpTo = 1;
-  if (order.status === "Delivered") {
-    completedUpTo = 4;
-    steps[4].date = order.deliveredDate;
-    steps[4].expected = null;
-  } else if (order.status === "Accepted") {
-    completedUpTo = 1;
+    );
   }
 
   return (
-    <div className="px-6 py-8 bg-gray-50 border-t border-gray-200">
-      <h3 className="text-lg font-semibold mb-6 text-[var(--text-main)]">Order Status</h3>
-      <div className="flex items-center justify-between relative">
-        {/* Background Line */}
-        <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
-        {/* Progress Line */}
-        <div
-          className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
-          style={{ width: `${(completedUpTo + 1) * 20}%` }}
-        />
-
-        {steps.map((step, index) => {
-          const Icon = step.icon;
-          const isCompleted = index <= completedUpTo;
-          const isActive = index === completedUpTo + 1;
-
-          return (
-            <div key={index} className="flex flex-col items-center relative z-10 flex-1">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${isCompleted
-                ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
-                : isActive
-                  ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
-                  : "bg-gray-300 text-gray-500"
-                }`}>
-                <Icon className="w-6 h-6" />
-              </div>
-              <div className="mt-7 text-center">
-                <p className={`font-medium text-sm ${isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"}`}>
-                  {step.label}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {step.date === "Expected" ? "Expected" : step.date}
-                  {step.expected && <><br /><span className="font-medium">{step.expected}</span></>}
-                  {step.time && <><br /><span className="text-xs">{step.time}</span></>}
-                  {step.date !== "Expected" && !step.time && !step.expected && <br />}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ================== REVIEW MODAL ================== */
-function ReviewModal({ order, isOpen, onClose }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    rating: 0,
-    title: "",
-    details: "",
-    photo: [],
-  });
-  const [showThankYou, setShowThankYou] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.rating) return alert("Please select a rating!");
-
-    setShowThankYou(true);
-    setTimeout(() => {
-      setShowThankYou(false);
-      onClose();
-      setFormData({ name: "", email: "", rating: 0, title: "", details: "", photo: [] });
-    }, 2500);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10">
-              <X className="w-6 h-6" />
-            </button>
-
-            <div className="p-6 sm:p-8">
-              <h3 className="text-2xl font-semibold mb-2">Add Review for Order #{order?.id}</h3>
-              <p className="text-[var(--text-muted)] mb-6">Share your experience with this order</p>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input type="text" placeholder="Name *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                  <input type="email" placeholder="Email *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                </div>
-
-                <div>
-                  <label className="block mb-2 font-medium">Your Rating *</label>
-                  <div className="flex space-x-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        fill="currentColor"
-                        className={`w-10 h-10 cursor-pointer transition ${star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"}`}
-                        onClick={() => setFormData({ ...formData, rating: star })}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <input type="text" placeholder="Review Title *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-
-                <textarea placeholder="Write your detailed review *" required rows="5" className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
-
-                <div>
-                  <label className="block mb-2 font-medium">Add Photos / Videos (Optional)</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition" onClick={() => document.getElementById("reviewFileInput").click()}>
-                    <UploadCloud className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500 font-medium">Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span></p>
-                    {formData.photo.length > 0 && (
-                      <div className="flex flex-wrap gap-3 mt-4 justify-center">
-                        {formData.photo.map((file, idx) => (
-                          <div key={idx} className="relative w-28 h-28 rounded overflow-hidden border">
-                            {file.type.startsWith("image/") ? <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" /> : <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" controls />}
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, photo: formData.photo.filter((_, i) => i !== idx) }); }} className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">×</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <input id="reviewFileInput" type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => setFormData({ ...formData, photo: [...formData.photo, ...Array.from(e.target.files)] })} />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition">Cancel</button>
-                  <button type="submit" className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition">Submit Review</button>
-                </div>
-              </form>
-            </div>
-
-            <AnimatePresence>
-              {showThankYou && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl">
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
-                    <img src="/review.png" alt="Thank you" className="w-32 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-[var(--secondary)] mb-2">Thank You!</h3>
-                    <p className="text-[var(--text-muted)]">Your review has been submitted successfully.</p>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-
-/* ================== ORDERS PAGE ================== */
-export default function OrdersPage() {
-  const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
-
-  return (
     <div className="min-h-screen">
-      {/* HERO */}
+      {/* Hero section – unchanged */}
       <section className="relative h-[50vh] flex items-center justify-center overflow-hidden">
         <img src="/login.png" alt="Chikki Banner" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-[var(--secondary)]/30"></div>
@@ -469,87 +143,99 @@ export default function OrdersPage() {
         </div>
       </section>
 
-      {/* ORDERS LIST */}
+      {/* Orders List */}
       <div className="max-w-6xl mx-auto px-4 py-12 space-y-10">
-        <h2 className="text-2xl font-bold text-[var(--text-main)]">Orders ({orders.length})</h2>
+        <h2 className="text-2xl font-bold text-[var(--text-main)]">
+          Orders ({orders.length})
+        </h2>
 
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            id={`order-${order.id}`}
-            className="bg-[var(--bg-card)] border border-[var(--secondary)] rounded-xl shadow-sm overflow-hidden"
-          >
-            {/* ORDER HEADER */}
-            <div className="bg-[var(--accent)] text-[var(--text-main)] px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm md:text-base">
-              <div><span className="font-semibold">Order ID</span><br />#{order.id}</div>
-              <div><span className="font-semibold">Total</span><br />₹{order.totalPayment.toFixed(2)}</div>
-              <div><span className="font-semibold">Payment</span><br />{order.paymentMethod}</div>
-              <div><span className="font-semibold">{order.estimatedDelivery ? "Estimated Delivery" : "Delivered Date"}</span><br />{order.estimatedDelivery || order.deliveredDate}</div>
-            </div>
-
-            {/* ORDER ITEMS */}
-            <div className="divide-y divide-gray-200">
-              {order.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-4 px-6 py-4">
-                  <img src={item.img} alt={item.title} className="w-20 h-20 rounded-lg object-cover" />
-                  <div>
-                    <h3 className="font-semibold text-[var(--text-main)]">{item.title}</h3>
-                    <p className="text-sm text-[var(--text-muted)]">Flavor: {item.flavor} | Weight: {item.weight} | Qty: {item.qty}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* NEW: ORDER STATUS TIMELINE */}
-            <OrderStatusTimeline order={order} />
-
-            {/* STATUS & ACTIONS */}
-            <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${order.status === "Delivered" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>
-                {order.status}
-              </span>
-              <div className="flex flex-wrap gap-3">
-                {order.status !== "Delivered" && (
-                  <button
-                    onClick={() => {
-                      document
-                        .getElementById(`order-${order.id}`)
-                        ?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "center",
-                        });
-                    }}
-                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
-                  >
-                    Track Order
-                  </button>
-                )}
-
-                {order.status === "Delivered" && (
-                  <button
-                    onClick={() => setSelectedOrderForReview(order)}
-                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
-                  >
-                    Add Review
-                  </button>
-                )}
-                <button
-                  className="px-6 py-2 border border-[var(--secondary)] text-[var(--text-main)] rounded hover:bg-[var(--bg-soft)] transition"
-                  onClick={() => downloadInvoice(order)}
-                >
-                  Invoice PDF
-                </button>
-              </div>
-            </div>
-
-            {/* HIDDEN PDF DIV */}
-            <InvoicePDF order={order} />
+        {orders.length === 0 ? (
+          <div className="text-center py-16 text-gray-500">
+            You haven't placed any orders yet.
           </div>
-        ))}
+        ) : (
+          orders.map((order) => (
+            <div
+              key={order.id}
+              id={`order-${order.id}`}
+              className="bg-[var(--bg-card)] border border-[var(--secondary)] rounded-xl shadow-sm overflow-hidden"
+            >
+              {/* Order Header */}
+              <div className="bg-[var(--accent)] text-[var(--text-main)] px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm md:text-base">
+                <div><span className="font-semibold">Order ID</span><br />#{order.id}</div>
+                <div><span className="font-semibold">Total</span><br />₹{order.totalPayment.toFixed(2)}</div>
+                <div><span className="font-semibold">Payment</span><br />{order.paymentMethod}</div>
+                <div>
+                  <span className="font-semibold">
+                    {order.estimatedDelivery ? "Estimated Delivery" : "Delivered Date"}
+                  </span>
+                  <br />
+                  {order.estimatedDelivery || order.deliveredDate || "—"}
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="divide-y divide-gray-200">
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-4 px-6 py-4">
+                    <img src={item.img} alt={item.title} className="w-20 h-20 rounded-lg object-cover" />
+                    <div>
+                      <h3 className="font-semibold text-[var(--text-main)]">{item.title}</h3>
+                      <p className="text-sm text-[var(--text-muted)]">
+                        Flavor: {item.flavor} | Weight: {item.weight} | Qty: {item.qty}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Timeline */}
+              <OrderStatusTimeline order={order} />
+
+              {/* Actions */}
+              <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${order.status === "Delivered" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>
+                  {order.status}
+                </span>
+                <div className="flex flex-wrap gap-3">
+                  {order.status !== "Delivered" && (
+                    <button
+                      onClick={() => document.getElementById(`order-${order.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                      className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
+                    >
+                      Track Order
+                    </button>
+                  )}
+                  {order.status === "Delivered" && (
+                    <button
+                      onClick={() => setSelectedOrderForReview(order)}
+                      className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
+                    >
+                      Add Review
+                    </button>
+                  )}
+                  <button
+                    className="px-6 py-2 border border-[var(--secondary)] text-[var(--text-main)] rounded hover:bg-[var(--bg-soft)] transition"
+                    onClick={() => downloadInvoice(order)}
+                  >
+                    Invoice PDF
+                  </button>
+                </div>
+              </div>
+
+              {/* Hidden PDF */}
+              <InvoicePDF order={order} />
+            </div>
+          ))
+        )}
       </div>
 
-      {/* Modals */}
-      <ReviewModal order={selectedOrderForReview} isOpen={!!selectedOrderForReview} onClose={() => setSelectedOrderForReview(null)} />
+      {/* Review Modal */}
+      <ReviewModal
+        order={selectedOrderForReview}
+        isOpen={!!selectedOrderForReview}
+        onClose={() => setSelectedOrderForReview(null)}
+      />
     </div>
   );
 }

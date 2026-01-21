@@ -1,4 +1,4 @@
-// src/pages/OrdersPage.jsx  (or your preferred location)
+// src/pages/OrdersPage.jsx
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,7 +7,6 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 import {
   Star,
-  UploadCloud,
   X,
   Package,
   Truck,
@@ -15,6 +14,9 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import axios from "axios";
+
+// Important: Tell axios to always send cookies (for httpOnly cookie / session auth)
+axios.defaults.withCredentials = true;
 
 const API_BASE = import.meta.env.VITE_API_BASE || "https://sweet-backend-nhwt.onrender.com";
 const API_ORDERS_URL = `${API_BASE}/api/orders`;
@@ -24,7 +26,6 @@ const API_ORDERS_URL = `${API_BASE}/api/orders`;
 // ────────────────────────────────────────────────
 const downloadInvoice = async (order) => {
   const element = document.getElementById(`invoice-${order._id}`);
-
   if (!element) {
     console.warn("Invoice element not found");
     return;
@@ -35,7 +36,7 @@ const downloadInvoice = async (order) => {
   element.style.left = "-9999px";
   element.style.top = "-9999px";
 
-  // Wait for all images to load
+  // Wait for images
   await Promise.all(
     Array.from(element.querySelectorAll("img")).map(
       (img) =>
@@ -72,7 +73,7 @@ const downloadInvoice = async (order) => {
 };
 
 // ────────────────────────────────────────────────
-// INVOICE PDF HIDDEN COMPONENT
+// INVOICE HIDDEN COMPONENT
 // ────────────────────────────────────────────────
 function InvoicePDF({ order }) {
   const pdfInvoiceDate = order.createdAt
@@ -84,7 +85,6 @@ function InvoicePDF({ order }) {
     : "—";
 
   const items = order.items || [];
-
   const subtotal = items.reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0);
   const shipping = order.shippingCharge || 0;
   const total = subtotal + shipping;
@@ -137,14 +137,7 @@ function InvoicePDF({ order }) {
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "26px",
-                fontWeight: "700",
-                color: "#c63b2f",
-              }}
-            >
+            <h2 style={{ margin: 0, fontSize: "26px", fontWeight: "700", color: "#c63b2f" }}>
               INVOICE
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: "10px" }}>
@@ -282,7 +275,7 @@ function InvoicePDF({ order }) {
 }
 
 // ────────────────────────────────────────────────
-// STATUS TIMELINE
+// ORDER STATUS TIMELINE
 // ────────────────────────────────────────────────
 function OrderStatusTimeline({ order }) {
   const statusOrder = [
@@ -362,7 +355,7 @@ function OrderStatusTimeline({ order }) {
 }
 
 // ────────────────────────────────────────────────
-// REVIEW MODAL (placeholder - connect later)
+// REVIEW MODAL (demo version)
 // ────────────────────────────────────────────────
 function ReviewModal({ order, isOpen, onClose }) {
   const [rating, setRating] = useState(0);
@@ -375,9 +368,13 @@ function ReviewModal({ order, isOpen, onClose }) {
       alert("Please select a rating");
       return;
     }
-    // TODO: send to /api/reviews
-    console.log("Review:", { orderId: order._id, rating, title, comment });
-    alert("Review submitted! (demo)");
+    console.log("Review submitted (demo):", {
+      orderId: order._id,
+      rating,
+      title,
+      comment,
+    });
+    alert("Review submitted! (demo mode)");
     onClose();
   };
 
@@ -401,7 +398,9 @@ function ReviewModal({ order, isOpen, onClose }) {
         >
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold">Review Order #{order.orderNumber || order._id.slice(-6)}</h3>
+              <h3 className="text-2xl font-bold">
+                Review Order #{order.orderNumber || order._id?.slice(-6)}
+              </h3>
               <button onClick={onClose}>
                 <X className="w-6 h-6 text-gray-500 hover:text-gray-700" />
               </button>
@@ -469,7 +468,7 @@ function ReviewModal({ order, isOpen, onClose }) {
 }
 
 // ────────────────────────────────────────────────
-// MAIN ORDERS PAGE
+// MAIN ORDERS PAGE COMPONENT
 // ────────────────────────────────────────────────
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -480,17 +479,19 @@ export default function OrdersPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Please login to view orders");
+        setLoading(true);
+        setError(null);
 
-        const res = await axios.get(API_ORDERS_URL, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(API_ORDERS_URL);
 
-        setOrders(res.data.data || res.data || []);
+        setOrders(response.data.data || response.data.orders || response.data || []);
       } catch (err) {
-        console.error(err);
-        setError(err.response?.data?.message || "Could not load orders");
+        console.error("Failed to fetch orders:", err);
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to load orders. Please make sure you are logged in."
+        );
       } finally {
         setLoading(false);
       }
@@ -510,14 +511,14 @@ export default function OrdersPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-600 text-xl">{error}</div>
+        <div className="text-red-600 text-xl text-center px-4">{error}</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
+      {/* Hero Section */}
       <section className="relative h-80 md:h-[50vh] flex items-center justify-center overflow-hidden">
         <img
           src="/login.png"
@@ -547,7 +548,7 @@ export default function OrdersPage() {
         </div>
       </section>
 
-      {/* Content */}
+      {/* Orders List */}
       <div className="max-w-6xl mx-auto px-4 py-12">
         <h2 className="text-3xl font-bold mb-8">Your Orders ({orders.length})</h2>
 
@@ -561,11 +562,11 @@ export default function OrdersPage() {
               key={order._id}
               className="mb-10 bg-white rounded-xl shadow-md overflow-hidden border border-orange-100"
             >
-              {/* Header */}
+              {/* Order Header */}
               <div className="bg-orange-50 px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm md:text-base">
                 <div>
                   <div className="font-semibold">Order ID</div>
-                  <div>{order.orderNumber || order._id.slice(-8)}</div>
+                  <div>{order.orderNumber || order._id?.slice(-8)}</div>
                 </div>
                 <div>
                   <div className="font-semibold">Total</div>
@@ -585,7 +586,7 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-              {/* Items */}
+              {/* Order Items */}
               <div className="divide-y">
                 {order.items?.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-4 p-6">
@@ -653,7 +654,7 @@ export default function OrdersPage() {
                 </div>
               </div>
 
-              {/* Hidden PDF */}
+              {/* Hidden Invoice PDF */}
               <InvoicePDF order={order} />
             </div>
           ))

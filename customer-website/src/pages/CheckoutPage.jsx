@@ -1,3 +1,4 @@
+// CheckoutPage.jsx
 import React, { useState, useEffect } from "react";
 import {
   CreditCard,
@@ -14,19 +15,19 @@ import "react-toastify/dist/ReactToastify.css";
 import OtpVerificationModal from "../components/OtpVerificationModal/OtpVerificationModal";
 import axios from "axios";
 import { useShop } from "../context/ShopContext";
-import { useAuth } from "../context/AuthContext";
+// useAuth को import नहीं किया क्योंकि अब user details इस्तेमाल नहीं हो रही
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cartItems, clearCart, fetchCart } = useShop();
-  const { user } = useAuth();
+  // const { user } = useAuth();   ← अब जरूरत नहीं
 
   const [payment, setPayment] = useState("card");
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("new"); // only new & payment now
+  const [activeTab, setActiveTab] = useState("new");
   const [showOtpModal, setShowOtpModal] = useState(false);
 
   const [form, setForm] = useState({
@@ -46,21 +47,15 @@ export default function CheckoutPage() {
     upi: "",
   });
 
-  // Pre-fill personal info from user (once)
+  // अब सिर्फ cart fetch करेंगे, pre-fill नहीं
   useEffect(() => {
     const init = async () => {
       try {
         await fetchCart();
-
+        // कोई pre-fill नहीं होगा
         setForm((prev) => ({
           ...prev,
-          firstName: user?.firstName || prev.firstName || "",
-          lastName: user?.lastName || prev.lastName || "",
-          email: user?.email || prev.email || "",
-          phone: user?.phone
-            ? String(user.phone).replace(/\D/g, "").slice(-10)
-            : prev.phone || "",
-          country: "India", // default
+          country: "India", // सिर्फ country default रखा
         }));
       } catch (err) {
         console.error("Checkout init error:", err);
@@ -70,7 +65,7 @@ export default function CheckoutPage() {
     };
 
     init();
-  }, [fetchCart, user]);
+  }, [fetchCart]);
 
   // Price calculations
   const getPrice = (item) => Number(item.sellingPrice ?? item.price ?? 0);
@@ -91,49 +86,13 @@ export default function CheckoutPage() {
   // Validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^[6-9]\d{9}$/;
-  const cardRegex = /^\d{16}$/;
+  const cardNumberCleanRegex = /^\d{16}$/;
   const cvvRegex = /^\d{3}$/;
   const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
   const upiRegex = /^[\w.-]+@[\w.-]+$/;
 
   const handleOrder = async () => {
-    const requiredFields = [
-      "firstName",
-      "lastName",
-      "email",
-      "phone",
-      "country",
-      "address",
-      "city",
-      "state",
-      "pincode",
-    ];
-
-    for (const field of requiredFields) {
-      if (!form[field]?.trim()) {
-        toast.error(`Please fill ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`);
-        return;
-      }
-    }
-
-    if (!emailRegex.test(form.email.trim())) return toast.error("Invalid email");
-    if (!phoneRegex.test(form.phone.trim())) return toast.error("Phone must be 10 digits starting with 6-9");
-
-    if (payment === "card") {
-      if (!form.cardName?.trim()) return toast.error("Cardholder name required");
-      if (!cardRegex.test(form.cardNumber.replace(/\s/g, "")))
-        return toast.error("Card number must be 16 digits");
-      if (!expiryRegex.test(form.expiry)) return toast.error("Expiry format: MM/YY");
-      if (!cvvRegex.test(form.cvv)) return toast.error("CVV must be 3 digits");
-    }
-
-    if (payment === "gpay" && !upiRegex.test(form.upi.trim()))
-      return toast.error("Invalid UPI ID");
-
-    if (cartItems.length === 0) return toast.error("Cart is empty");
-
     setLoading(true);
-
     try {
       const payload = {
         firstName: form.firstName.trim(),
@@ -171,6 +130,80 @@ export default function CheckoutPage() {
     }
   };
 
+  const handlePlaceOrderClick = () => {
+    console.log("[DEBUG] Place Order clicked");
+    console.log("[DEBUG] cartItems length:", cartItems.length);
+    console.log("[DEBUG] form state:", form);
+    console.log("[DEBUG] payment method:", payment);
+
+    if (cartItems.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    // Required fields check
+    const required = {
+      firstName: "First name",
+      lastName: "Last name",
+      email: "Email",
+      phone: "Phone number",
+      country: "Country",
+      address: "Address",
+      city: "City",
+      state: "State",
+      pincode: "Pincode",
+    };
+
+    for (const [key, label] of Object.entries(required)) {
+      if (!form[key]?.trim()) {
+        toast.error(`Please enter ${label}`);
+        console.log(`[VALIDATION FAIL] Missing: ${key}`);
+        return;
+      }
+    }
+
+    if (!emailRegex.test(form.email.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!phoneRegex.test(form.phone.trim())) {
+      toast.error("Phone must be 10 digits starting with 6-9");
+      return;
+    }
+
+    // Payment method specific validation
+    if (payment === "card") {
+      if (!form.cardName?.trim()) {
+        toast.error("Cardholder name is required");
+        return;
+      }
+      const cleanCard = form.cardNumber.replace(/\D/g, "");
+      if (!cardNumberCleanRegex.test(cleanCard)) {
+        toast.error("Card number must be 16 digits");
+        return;
+      }
+      if (!expiryRegex.test(form.expiry)) {
+        toast.error("Expiry must be in MM/YY format (e.g. 12/28)");
+        return;
+      }
+      if (!cvvRegex.test(form.cvv)) {
+        toast.error("CVV must be 3 digits");
+        return;
+      }
+    }
+
+    if (payment === "gpay") {
+      if (!form.upi?.trim() || !upiRegex.test(form.upi.trim())) {
+        toast.error("Please enter a valid UPI ID (example@upi)");
+        return;
+      }
+    }
+
+    console.log("[DEBUG] All validations passed → showing OTP modal");
+    setShowOtpModal(true);
+  };
+
   if (pageLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -200,7 +233,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
-      {/* Hero */}
+      {/* Hero section */}
       <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center overflow-hidden">
         <img
           src="/login.png"
@@ -239,22 +272,23 @@ export default function CheckoutPage() {
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
+          {/* Billing + Payment */}
           <div className="lg:col-span-2 order-2 lg:order-1">
             <div className="bg-white rounded-2xl shadow-md sm:shadow-lg p-5 sm:p-7 md:p-9 space-y-6">
               <h2 className="text-2xl sm:text-2.5xl font-bold text-gray-800">
                 Billing Details
               </h2>
 
-              {/* Tabs – only New Address + Payment */}
+              {/* Tabs */}
               <div className="flex border-b border-gray-200 overflow-x-auto -mx-5 sm:-mx-7 md:-mx-9 px-5 sm:px-7 md:px-9">
                 {["new", "payment"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`flex-1 min-w-[110px] py-3.5 sm:py-4 text-center font-medium text-sm sm:text-base transition-colors whitespace-nowrap ${
+                    className={`flex-1 py-2 px-4 text-sm sm:text-base font-medium ${
                       activeTab === tab
                         ? "border-b-2 border-[#6b3f26] text-[#6b3f26]"
-                        : "text-gray-600 hover:text-gray-800"
+                        : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
                     {tab === "new" ? "Delivery Address" : "Payment Method"}
@@ -263,170 +297,14 @@ export default function CheckoutPage() {
               </div>
 
               <div className="pt-5 sm:pt-6">
-                {activeTab === "new" && (
-                  <div className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <Input
-                        label="First Name"
-                        required
-                        value={form.firstName}
-                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                      />
-                      <Input
-                        label="Last Name"
-                        required
-                        value={form.lastName}
-                        onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                      />
-                    </div>
-
-                    <Input
-                      label="Email"
-                      type="email"
-                      required
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    />
-
-                    <Input
-                      label="Phone Number"
-                      type="tel"
-                      required
-                      maxLength={10}
-                      value={form.phone}
-                      onChange={(e) =>
-                        setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })
-                      }
-                    />
-
-                    <Input
-                      label="Country"
-                      required
-                      value={form.country}
-                      onChange={(e) => setForm({ ...form, country: e.target.value })}
-                    />
-
-                    <Input
-                      label="Address (House No, Street, Area)"
-                      required
-                      value={form.address}
-                      onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    />
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                      <Input
-                        label="City"
-                        required
-                        value={form.city}
-                        onChange={(e) => setForm({ ...form, city: e.target.value })}
-                      />
-                      <Input
-                        label="State"
-                        required
-                        value={form.state}
-                        onChange={(e) => setForm({ ...form, state: e.target.value })}
-                      />
-                      <Input
-                        label="Pincode"
-                        required
-                        maxLength={6}
-                        value={form.pincode}
-                        onChange={(e) =>
-                          setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-
+                {activeTab === "new" && <AddressForm form={form} setForm={setForm} />}
                 {activeTab === "payment" && (
-                  <div className="space-y-6">
-                    <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
-                      Payment Method
-                    </h3>
-                    <div className="space-y-4">
-                      <Payment
-                        icon={<CreditCard className="w-6 h-6" />}
-                        label="Credit / Debit Card"
-                        value="card"
-                        payment={payment}
-                        setPayment={setPayment}
-                      />
-                      <Payment
-                        icon={<Smartphone className="w-6 h-6" />}
-                        label="Google Pay (UPI)"
-                        value="gpay"
-                        payment={payment}
-                        setPayment={setPayment}
-                      />
-                      <Payment
-                        icon={<Banknote className="w-6 h-6" />}
-                        label="Cash on Delivery"
-                        value="cod"
-                        payment={payment}
-                        setPayment={setPayment}
-                      />
-                    </div>
-
-                    {payment === "card" && (
-                      <div className="mt-6 p-5 sm:p-6 bg-gray-50 rounded-xl border border-gray-200 space-y-5">
-                        <Input
-                          label="Cardholder Name"
-                          required
-                          value={form.cardName}
-                          onChange={(e) => setForm({ ...form, cardName: e.target.value })}
-                        />
-                        <Input
-                          label="Card Number"
-                          required
-                          maxLength={19}
-                          placeholder="1234 5678 9012 3456"
-                          value={form.cardNumber}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              cardNumber: e.target.value
-                                .replace(/\D/g, "")
-                                .replace(/(.{4})/g, "$1 ")
-                                .trim(),
-                            })
-                          }
-                        />
-                        <div className="grid grid-cols-2 gap-5">
-                          <Input
-                            label="Expiry (MM/YY)"
-                            required
-                            placeholder="12/25"
-                            value={form.expiry}
-                            onChange={(e) => setForm({ ...form, expiry: e.target.value })}
-                          />
-                          <Input
-                            label="CVV"
-                            type="password"
-                            required
-                            maxLength={3}
-                            placeholder="123"
-                            value={form.cvv}
-                            onChange={(e) =>
-                              setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })
-                            }
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {payment === "gpay" && (
-                      <div className="mt-6 bg-gray-50 p-5 sm:p-6 rounded-xl border border-gray-200">
-                        <Input
-                          label="UPI ID"
-                          required
-                          placeholder="example@okaxis"
-                          value={form.upi}
-                          onChange={(e) => setForm({ ...form, upi: e.target.value })}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  <PaymentForm
+                    payment={payment}
+                    setPayment={setPayment}
+                    form={form}
+                    setForm={setForm}
+                  />
                 )}
               </div>
             </div>
@@ -434,69 +312,14 @@ export default function CheckoutPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1 order-1 lg:order-2 lg:sticky lg:top-6 h-fit">
-            <div className="bg-white rounded-2xl shadow-md sm:shadow-lg p-6 sm:p-7 md:p-8">
-              <h2 className="text-xl sm:text-2xl font-bold mb-5">Order Summary</h2>
-
-              <div className="border-t border-gray-200 pt-5 space-y-3 text-sm sm:text-base">
-                <Row label="Items" value={cartItems.length} />
-                <Row label="Subtotal" value={`₹${subtotal.toFixed(2)}`} />
-                <Row
-                  label="Shipping"
-                  value={shipping ? `₹${shipping.toFixed(2)}` : "Free"}
-                  green={!shipping}
-                />
-              </div>
-
-              <div className="border-t border-gray-200 my-5"></div>
-
-              <Row label="Total" value={`₹${total.toFixed(2)}`} bold big />
-
-              <button
-                onClick={() => {
-                  const phone = form.phone.trim();
-                  if (!phone || !form.address?.trim()) {
-                    toast.error("Please fill delivery address");
-                    return;
-                  }
-                  if (phone.length !== 10) {
-                    toast.error(`Phone must be exactly 10 digits (currently ${phone.length})`);
-                    return;
-                  }
-                  if (!/^[6-9]/.test(phone)) {
-                    toast.error("Phone must start with 6,7,8 or 9");
-                    return;
-                  }
-
-                  if (payment === "cod") {
-                    setShowOtpModal(true);
-                  } else {
-                    handleOrder();
-                  }
-                }}
-                disabled={loading || cartItems.length === 0}
-                className={`w-full mt-6 py-3.5 sm:py-4 rounded-xl font-bold text-white text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2
-                  ${loading || cartItems.length === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-[#6b3f26] hover:bg-[#8b5e3c]"}`}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Place Order"
-                )}
-              </button>
-
-              <div className="mt-5 flex flex-col items-center text-gray-600 text-xs sm:text-sm gap-1">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-green-600" />
-                  <span className="font-medium">Safe & Secure Checkout</span>
-                </div>
-                <p className="text-center text-gray-500 mt-1">
-                  Your payment information is encrypted
-                </p>
-              </div>
-            </div>
+            <OrderSummary
+              subtotal={subtotal}
+              shipping={shipping}
+              total={total}
+              cartItems={cartItems}
+              loading={loading}
+              onPlaceOrder={handlePlaceOrderClick}
+            />
           </div>
         </div>
       </div>
@@ -533,7 +356,8 @@ export default function CheckoutPage() {
   );
 }
 
-/* Reusable Components */
+/* ───────────── Sub-components (वही रहेंगे, कोई बदलाव नहीं) ───────────── */
+
 function Input({ label, required, value, onChange, ...rest }) {
   return (
     <div className="space-y-1.5">
@@ -580,6 +404,131 @@ function Row({ label, value, bold, big, green }) {
     >
       <span>{label}</span>
       <span>{value}</span>
+    </div>
+  );
+}
+
+function AddressForm({ form, setForm }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <Input label="First Name" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+        <Input label="Last Name" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+      </div>
+      <Input label="Email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+      <Input
+        label="Phone Number"
+        type="tel"
+        required
+        maxLength={10}
+        value={form.phone}
+        onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })}
+      />
+      <Input label="Country" required value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+      <Input label="Address (House No, Street, Area)" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <Input label="City" required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+        <Input label="State" required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+        <Input
+          label="Pincode"
+          required
+          maxLength={6}
+          value={form.pincode}
+          onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PaymentForm({ payment, setPayment, form, setForm }) {
+  return (
+    <div className="space-y-6">
+      <h3 className="text-xl sm:text-2xl font-bold text-gray-800">Payment Method</h3>
+      <div className="space-y-4">
+        <Payment icon={<CreditCard className="w-6 h-6" />} label="Credit / Debit Card" value="card" payment={payment} setPayment={setPayment} />
+        <Payment icon={<Smartphone className="w-6 h-6" />} label="Google Pay (UPI)" value="gpay" payment={payment} setPayment={setPayment} />
+        <Payment icon={<Banknote className="w-6 h-6" />} label="Cash on Delivery" value="cod" payment={payment} setPayment={setPayment} />
+      </div>
+
+      {payment === "card" && (
+        <div className="mt-6 p-5 sm:p-6 bg-gray-50 rounded-xl border border-gray-200 space-y-5">
+          <Input label="Cardholder Name" required value={form.cardName} onChange={(e) => setForm({ ...form, cardName: e.target.value })} />
+          <Input
+            label="Card Number"
+            required
+            maxLength={19}
+            placeholder="1234 5678 9012 3456"
+            value={form.cardNumber}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                cardNumber: e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim(),
+              })
+            }
+          />
+          <div className="grid grid-cols-2 gap-5">
+            <Input label="Expiry (MM/YY)" required placeholder="12/25" value={form.expiry} onChange={(e) => setForm({ ...form, expiry: e.target.value })} />
+            <Input
+              label="CVV"
+              type="password"
+              required
+              maxLength={3}
+              placeholder="123"
+              value={form.cvv}
+              onChange={(e) => setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })}
+            />
+          </div>
+        </div>
+      )}
+
+      {payment === "gpay" && (
+        <div className="mt-6 bg-gray-50 p-5 sm:p-6 rounded-xl border border-gray-200">
+          <Input label="UPI ID" required placeholder="example@okaxis" value={form.upi} onChange={(e) => setForm({ ...form, upi: e.target.value })} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderSummary({ subtotal, shipping, total, cartItems, loading, onPlaceOrder }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-md sm:shadow-lg p-6 sm:p-7 md:p-8">
+      <h2 className="text-xl sm:text-2xl font-bold mb-5">Order Summary</h2>
+
+      <div className="border-t border-gray-200 pt-5 space-y-3 text-sm sm:text-base">
+        <Row label="Items" value={cartItems.length} />
+        <Row label="Subtotal" value={`₹${subtotal.toFixed(2)}`} />
+        <Row label="Shipping" value={shipping ? `₹${shipping.toFixed(2)}` : "Free"} green={!shipping} />
+      </div>
+
+      <div className="border-t border-gray-200 my-5"></div>
+
+      <Row label="Total" value={`₹${total.toFixed(2)}`} bold big />
+
+      <button
+        onClick={onPlaceOrder}
+        disabled={loading || cartItems.length === 0}
+        className={`w-full mt-6 py-3.5 sm:py-4 rounded-xl font-bold text-white text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2
+          ${loading || cartItems.length === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-[#6b3f26] hover:bg-[#8b5e3c]"}`}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          "Place Order"
+        )}
+      </button>
+
+      <div className="mt-5 flex flex-col items-center text-gray-600 text-xs sm:text-sm gap-1">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-green-600" />
+          <span className="font-medium">Safe & Secure Checkout</span>
+        </div>
+        <p className="text-center text-gray-500 mt-1">Your payment information is encrypted</p>
+      </div>
     </div>
   );
 }

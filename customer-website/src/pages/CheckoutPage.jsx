@@ -15,20 +15,19 @@ import "react-toastify/dist/ReactToastify.css";
 import OtpVerificationModal from "../components/OtpVerificationModal/OtpVerificationModal";
 import axios from "axios";
 import { useShop } from "../context/ShopContext";
-// useAuth को import नहीं किया क्योंकि अब user details इस्तेमाल नहीं हो रही
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { cartItems, clearCart, fetchCart } = useShop();
-  // const { user } = useAuth();   ← अब जरूरत नहीं
 
   const [payment, setPayment] = useState("card");
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("new");
   const [showOtpModal, setShowOtpModal] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -47,15 +46,13 @@ export default function CheckoutPage() {
     upi: "",
   });
 
-  // अब सिर्फ cart fetch करेंगे, pre-fill नहीं
   useEffect(() => {
     const init = async () => {
       try {
         await fetchCart();
-        // कोई pre-fill नहीं होगा
         setForm((prev) => ({
           ...prev,
-          country: "India", // सिर्फ country default रखा
+          country: "India",
         }));
       } catch (err) {
         console.error("Checkout init error:", err);
@@ -73,11 +70,11 @@ export default function CheckoutPage() {
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + getPrice(item) * getQty(item),
-    0
+    0,
   );
   const shippingFromItems = cartItems.reduce(
     (sum, item) => sum + Number(item.shippingCharge ?? 0),
-    0
+    0,
   );
   const shipping =
     shippingFromItems > 0 ? shippingFromItems : subtotal > 500 ? 0 : 50;
@@ -92,7 +89,9 @@ export default function CheckoutPage() {
   const upiRegex = /^[\w.-]+@[\w.-]+$/;
 
   const handleOrder = async () => {
+    if (loading) return;
     setLoading(true);
+
     try {
       const payload = {
         firstName: form.firstName.trim(),
@@ -105,43 +104,86 @@ export default function CheckoutPage() {
         state: form.state.trim(),
         pincode: form.pincode.trim(),
         paymentMethod: payment,
+        ...(payment === "gpay" && { upiId: form.upi?.trim() }),
       };
+
+      console.log("[ORDER SUBMIT] Sending payload:", payload);
 
       const res = await axios.post(`${API_BASE}/api/orders`, payload, {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
       });
 
+      console.log("[ORDER SUBMIT] Server response:", res.data);
+
       if (res.data?.success) {
         toast.success("Order placed successfully!");
-        await clearCart();
-        const orderId = res.data.orderId || res.data._id || "success";
-        setTimeout(() => {
-          navigate(`/ordercomplete?orderId=${orderId}`);
-        }, 1500);
+
+        const orderId =
+          res.data.orderId ||
+          res.data._id ||
+          res.data.id ||
+          (res.data.data?._id) ||
+          (res.data.order?._id);
+
+        console.log("[ORDER SUBMIT] Extracted orderId:", orderId);
+
+        if (!orderId) {
+          toast.error("Order created but ID missing from server");
+          console.error("No orderId in response:", res.data);
+          return;
+        }
+
+        try {
+          await clearCart();
+          console.log("[ORDER SUBMIT] Cart cleared successfully");
+        } catch (clearErr) {
+          console.warn("[ORDER SUBMIT] Failed to clear cart (order still placed)", clearErr);
+          // Optional: toast.warn("Order placed, but cart may not have cleared");
+        }
+
+        setIsRedirecting(true);
+        navigate(`/ordercomplete?orderId=${orderId}`);
       } else {
-        toast.error(res.data?.message || "Failed to place order");
+        const msg = res.data?.message || "Failed to place order";
+        console.warn("[ORDER SUBMIT] Server rejected:", msg);
+        toast.error(msg);
       }
     } catch (err) {
-      console.error("Order placement failed:", err);
-      toast.error(err.response?.data?.message || "Something went wrong");
+      console.error("Order placement failed:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.response?.data?.message || err.message,
+      });
+
+      let errorMsg = "Something went wrong";
+      if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err.response?.status === 401 || err.response?.status === 403) {
+        errorMsg = "Session expired – please log in again";
+      } else if (err.response?.status === 400) {
+        errorMsg = "Invalid order details";
+      }
+
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   const handlePlaceOrderClick = () => {
+    if (loading) return;
+
     console.log("[DEBUG] Place Order clicked");
     console.log("[DEBUG] cartItems length:", cartItems.length);
     console.log("[DEBUG] form state:", form);
     console.log("[DEBUG] payment method:", payment);
 
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !isRedirecting) {
       toast.error("Your cart is empty");
       return;
     }
 
-    // Required fields check
     const required = {
       firstName: "First name",
       lastName: "Last name",
@@ -172,7 +214,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Payment method specific validation
     if (payment === "card") {
       if (!form.cardName?.trim()) {
         toast.error("Cardholder name is required");
@@ -232,7 +273,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
+    <div className="min-h-screen bg-gray-50 pb-12 py-10">
       {/* Hero section */}
       <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center overflow-hidden">
         <img
@@ -256,11 +297,17 @@ export default function CheckoutPage() {
             transition={{ delay: 0.2 }}
             className="mt-5 flex justify-center items-center gap-2 sm:gap-4 text-white text-sm sm:text-base flex-wrap"
           >
-            <Link to="/" className="hover:text-[#8b5e3c] hover:underline transition">
+            <Link
+              to="/"
+              className="hover:text-[#8b5e3c] hover:underline transition"
+            >
               Home
             </Link>
             <span className="font-bold">/</span>
-            <Link to="/cart" className="hover:text-[#8b5e3c] hover:underline transition">
+            <Link
+              to="/cart"
+              className="hover:text-[#8b5e3c] hover:underline transition"
+            >
               Cart
             </Link>
             <span className="font-bold">/</span>
@@ -297,7 +344,9 @@ export default function CheckoutPage() {
               </div>
 
               <div className="pt-5 sm:pt-6">
-                {activeTab === "new" && <AddressForm form={form} setForm={setForm} />}
+                {activeTab === "new" && (
+                  <AddressForm form={form} setForm={setForm} />
+                )}
                 {activeTab === "payment" && (
                   <PaymentForm
                     payment={payment}
@@ -318,7 +367,9 @@ export default function CheckoutPage() {
               total={total}
               cartItems={cartItems}
               loading={loading}
+              showOtpModal={showOtpModal}
               onPlaceOrder={handlePlaceOrderClick}
+              payment={payment}
             />
           </div>
         </div>
@@ -356,7 +407,7 @@ export default function CheckoutPage() {
   );
 }
 
-/* ───────────── Sub-components (वही रहेंगे, कोई बदलाव नहीं) ───────────── */
+/* ───────────── Sub-components (unchanged) ───────────── */
 
 function Input({ label, required, value, onChange, ...rest }) {
   return (
@@ -412,29 +463,72 @@ function AddressForm({ form, setForm }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <Input label="First Name" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-        <Input label="Last Name" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+        <Input
+          label="First Name"
+          required
+          value={form.firstName}
+          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+        />
+        <Input
+          label="Last Name"
+          required
+          value={form.lastName}
+          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+        />
       </div>
-      <Input label="Email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+      <Input
+        label="Email"
+        type="email"
+        required
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+      />
       <Input
         label="Phone Number"
         type="tel"
         required
         maxLength={10}
         value={form.phone}
-        onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })}
+        onChange={(e) => {
+          const val = e.target.value.replace(/\D/g, "");
+          if (val.length <= 10) {
+            setForm({ ...form, phone: val });
+          }
+        }}
       />
-      <Input label="Country" required value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
-      <Input label="Address (House No, Street, Area)" required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+      <Input
+        label="Country"
+        required
+        value={form.country}
+        onChange={(e) => setForm({ ...form, country: e.target.value })}
+      />
+      <Input
+        label="Address (House No, Street, Area)"
+        required
+        value={form.address}
+        onChange={(e) => setForm({ ...form, address: e.target.value })}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <Input label="City" required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-        <Input label="State" required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+        <Input
+          label="City"
+          required
+          value={form.city}
+          onChange={(e) => setForm({ ...form, city: e.target.value })}
+        />
+        <Input
+          label="State"
+          required
+          value={form.state}
+          onChange={(e) => setForm({ ...form, state: e.target.value })}
+        />
         <Input
           label="Pincode"
           required
           maxLength={6}
           value={form.pincode}
-          onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })}
+          onChange={(e) =>
+            setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })
+          }
         />
       </div>
     </div>
@@ -444,16 +538,41 @@ function AddressForm({ form, setForm }) {
 function PaymentForm({ payment, setPayment, form, setForm }) {
   return (
     <div className="space-y-6">
-      <h3 className="text-xl sm:text-2xl font-bold text-gray-800">Payment Method</h3>
+      <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
+        Payment Method
+      </h3>
       <div className="space-y-4">
-        <Payment icon={<CreditCard className="w-6 h-6" />} label="Credit / Debit Card" value="card" payment={payment} setPayment={setPayment} />
-        <Payment icon={<Smartphone className="w-6 h-6" />} label="Google Pay (UPI)" value="gpay" payment={payment} setPayment={setPayment} />
-        <Payment icon={<Banknote className="w-6 h-6" />} label="Cash on Delivery" value="cod" payment={payment} setPayment={setPayment} />
+        <Payment
+          icon={<CreditCard className="w-6 h-6" />}
+          label="Credit / Debit Card"
+          value="card"
+          payment={payment}
+          setPayment={setPayment}
+        />
+        <Payment
+          icon={<Smartphone className="w-6 h-6" />}
+          label="Google Pay (UPI)"
+          value="gpay"
+          payment={payment}
+          setPayment={setPayment}
+        />
+        <Payment
+          icon={<Banknote className="w-6 h-6" />}
+          label="Cash on Delivery"
+          value="cod"
+          payment={payment}
+          setPayment={setPayment}
+        />
       </div>
 
       {payment === "card" && (
         <div className="mt-6 p-5 sm:p-6 bg-gray-50 rounded-xl border border-gray-200 space-y-5">
-          <Input label="Cardholder Name" required value={form.cardName} onChange={(e) => setForm({ ...form, cardName: e.target.value })} />
+          <Input
+            label="Cardholder Name"
+            required
+            value={form.cardName}
+            onChange={(e) => setForm({ ...form, cardName: e.target.value })}
+          />
           <Input
             label="Card Number"
             required
@@ -463,12 +582,21 @@ function PaymentForm({ payment, setPayment, form, setForm }) {
             onChange={(e) =>
               setForm({
                 ...form,
-                cardNumber: e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim(),
+                cardNumber: e.target.value
+                  .replace(/\D/g, "")
+                  .replace(/(.{4})/g, "$1 ")
+                  .trim(),
               })
             }
           />
           <div className="grid grid-cols-2 gap-5">
-            <Input label="Expiry (MM/YY)" required placeholder="12/25" value={form.expiry} onChange={(e) => setForm({ ...form, expiry: e.target.value })} />
+            <Input
+              label="Expiry (MM/YY)"
+              required
+              placeholder="12/25"
+              value={form.expiry}
+              onChange={(e) => setForm({ ...form, expiry: e.target.value })}
+            />
             <Input
               label="CVV"
               type="password"
@@ -476,7 +604,9 @@ function PaymentForm({ payment, setPayment, form, setForm }) {
               maxLength={3}
               placeholder="123"
               value={form.cvv}
-              onChange={(e) => setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })}
+              onChange={(e) =>
+                setForm({ ...form, cvv: e.target.value.replace(/\D/g, "") })
+              }
             />
           </div>
         </div>
@@ -484,14 +614,29 @@ function PaymentForm({ payment, setPayment, form, setForm }) {
 
       {payment === "gpay" && (
         <div className="mt-6 bg-gray-50 p-5 sm:p-6 rounded-xl border border-gray-200">
-          <Input label="UPI ID" required placeholder="example@okaxis" value={form.upi} onChange={(e) => setForm({ ...form, upi: e.target.value })} />
+          <Input
+            label="UPI ID"
+            required
+            placeholder="example@okaxis"
+            value={form.upi}
+            onChange={(e) => setForm({ ...form, upi: e.target.value })}
+          />
         </div>
       )}
     </div>
   );
 }
 
-function OrderSummary({ subtotal, shipping, total, cartItems, loading, onPlaceOrder }) {
+function OrderSummary({
+  subtotal,
+  shipping,
+  total,
+  cartItems,
+  loading,
+  showOtpModal,
+  onPlaceOrder,
+  payment,
+}) {
   return (
     <div className="bg-white rounded-2xl shadow-md sm:shadow-lg p-6 sm:p-7 md:p-8">
       <h2 className="text-xl sm:text-2xl font-bold mb-5">Order Summary</h2>
@@ -499,7 +644,19 @@ function OrderSummary({ subtotal, shipping, total, cartItems, loading, onPlaceOr
       <div className="border-t border-gray-200 pt-5 space-y-3 text-sm sm:text-base">
         <Row label="Items" value={cartItems.length} />
         <Row label="Subtotal" value={`₹${subtotal.toFixed(2)}`} />
-        <Row label="Shipping" value={shipping ? `₹${shipping.toFixed(2)}` : "Free"} green={!shipping} />
+        <Row
+          label="Shipping"
+          value={shipping ? `₹${shipping.toFixed(2)}` : "Free"}
+          green={!shipping}
+        />
+        <Row
+          label="Payment"
+          value={
+            payment === "card" ? "Card" :
+            payment === "gpay" ? "UPI / GPay" :
+            "Cash on Delivery"
+          }
+        />
       </div>
 
       <div className="border-t border-gray-200 my-5"></div>
@@ -508,9 +665,9 @@ function OrderSummary({ subtotal, shipping, total, cartItems, loading, onPlaceOr
 
       <button
         onClick={onPlaceOrder}
-        disabled={loading || cartItems.length === 0}
+        disabled={loading || cartItems.length === 0 || showOtpModal}
         className={`w-full mt-6 py-3.5 sm:py-4 rounded-xl font-bold text-white text-base sm:text-lg transition shadow-md flex items-center justify-center gap-2
-          ${loading || cartItems.length === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-[#6b3f26] hover:bg-[#8b5e3c]"}`}
+          ${loading || cartItems.length === 0 || showOtpModal ? "bg-gray-400 cursor-not-allowed" : "bg-[#6b3f26] hover:bg-[#8b5e3c]"}`}
       >
         {loading ? (
           <>
@@ -527,7 +684,9 @@ function OrderSummary({ subtotal, shipping, total, cartItems, loading, onPlaceOr
           <ShieldCheck className="w-5 h-5 text-green-600" />
           <span className="font-medium">Safe & Secure Checkout</span>
         </div>
-        <p className="text-center text-gray-500 mt-1">Your payment information is encrypted</p>
+        <p className="text-center text-gray-500 mt-1">
+          Your payment information is encrypted
+        </p>
       </div>
     </div>
   );

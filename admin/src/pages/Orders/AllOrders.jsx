@@ -11,7 +11,7 @@ import { toast, ToastContainer, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
-/* ---------------- STATS (still static – can be made dynamic later) ---------------- */
+/* ---------------- STATS -------------------- */
 const stats = [
   { title: "Total Orders", value: "1,248", change: "+6%", positive: true },
   { title: "Completed Orders", value: "986", change: "+4%", positive: true },
@@ -22,23 +22,20 @@ const stats = [
 /* ---------------- FILTER / STATUS ---------------- */
 const FILTER_OPTIONS = [
   "All",
-  "Placed",
-  "Pending",
+  "Accepted",
   "Processing",
   "On the Way",
   "Delivered",
-  "Rejected",
-  "Cancelled",
+
 ];
 
 const STATUS_OPTIONS = [
   "Placed",
-  "Pending",
+  "Accepted",
   "Processing",
   "On the Way",
   "Delivered",
-  "Rejected",
-  "Cancelled",
+
 ];
 
 /* ---------------- STATUS STYLE ---------------- */
@@ -46,15 +43,11 @@ const statusStyle = (status) => {
   switch (status) {
     case "Delivered":
       return "bg-green-100 text-green-800";
-    case "Pending":
+    case "Accepted":
       return "bg-yellow-100 text-yellow-800";
     case "Processing":
     case "On the Way":
       return "bg-blue-100 text-blue-700";
-    case "Rejected":
-      return "bg-red-100 text-red-700";
-    case "Cancelled":
-      return "bg-gray-200 text-gray-700";
     default:
       return "bg-gray-100 text-gray-800";
   }
@@ -226,12 +219,14 @@ export default function AllOrdersPage() {
     const searchMatch = searchLower
       ? o.product.toLowerCase().includes(searchLower) ||
         o.customer.toLowerCase().includes(searchLower) ||
-        o.id.toLowerCase().includes(searchLower)
+        o.id.replace(/#/g, "").toLowerCase().includes(searchLower) ||
+        o.status.toLowerCase().includes(searchLower) 
       : true;
 
     const statusMatch =
       filterStatus === "All" ||
-      o.status?.toLowerCase() === filterStatus.toLowerCase();
+      o.status.toLowerCase().replace(/\s/g, "") ===
+        filterStatus.toLowerCase().replace(/\s/g, "");
 
     return searchMatch && statusMatch;
   });
@@ -322,14 +317,14 @@ export default function AllOrdersPage() {
                   e.stopPropagation();
                   setFilterDropdownOpen(!filterDropdownOpen);
                 }}
-                className="px-3 py-2 text-sm rounded-lg bg-[var(--bg-soft)] flex items-center justify-between w-48 focus:ring-2 focus:ring-[var(--primary)] outline-none"
+                className="px-3 py-2 text-sm rounded-lg bg-[var(--bg-soft)] flex items-center justify-between w-48 focus:ring-2 focus:ring-[var(--primary)] outline-none "
               >
                 {filterStatus === "All" ? "Filter by Status" : filterStatus}
                 <ChevronDownIcon className="w-4 h-4 ml-2" />
               </button>
               {filterDropdownOpen && (
                 <div
-                  className="absolute mt-1 w-48 bg-[var(--bg-card)] border rounded-xl shadow-xl overflow-hidden z-[29]"
+                  className="absolute mt-1 w-48 bg-[var(--bg-card)] border rounded-xl shadow-xl overflow-hidden z-[999]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {FILTER_OPTIONS.map((option) => (

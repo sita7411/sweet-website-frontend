@@ -160,13 +160,11 @@ export default function PopularProductsPage() {
     const target = products.find((p) => (p._id || p.id) === id);
     if (!target) return;
 
-    // Client-side limit check
     if (!target.popular && popularCount >= 4) {
       toast.error("You can only select 4 popular products!");
       return;
     }
 
-    // Save previous state for rollback
     const previousProducts = [...products];
 
     // Optimistic update

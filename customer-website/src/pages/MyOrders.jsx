@@ -3,7 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
-import { Star, UploadCloud, X, Package, Truck, CheckCircle, ShoppingBag } from "lucide-react";
+import {
+  Star,
+  UploadCloud,
+  X,
+  Package,
+  Truck,
+  CheckCircle,
+  ShoppingBag,
+} from "lucide-react";
 import axios from "axios";
 
 // ────────────────────────────────────────────────
@@ -32,8 +40,8 @@ const downloadInvoice = async (order) => {
             img.onload = resolve;
             img.onerror = resolve;
           }
-        })
-    )
+        }),
+    ),
   );
 
   try {
@@ -61,7 +69,9 @@ const downloadInvoice = async (order) => {
 /* ================== INVOICE COMPONENT ================== */
 function InvoicePDF({ order }) {
   const billing = order.billingDetails || {};
-  const customerName = [billing.firstName, billing.lastName].filter(Boolean).join(" ") || "Valued Customer";
+  const customerName =
+    [billing.firstName, billing.lastName].filter(Boolean).join(" ") ||
+    "Valued Customer";
 
   const addressLines = [
     billing.address,
@@ -156,28 +166,49 @@ function InvoicePDF({ order }) {
               INVOICE
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: "10px" }}>
-              Invoice No: <strong>{order._id?.slice(-8).toUpperCase() || order.id}</strong>
+              Invoice No:{" "}
+              <strong>{order._id?.slice(-8).toUpperCase() || order.id}</strong>
             </p>
-            <p style={{ margin: "2px 0", fontSize: "10px" }}>Date: {invoiceDate}</p>
-            <p style={{ margin: "2px 0", fontSize: "10px" }}>Guest No: GST-2026-0045</p>
+            <p style={{ margin: "2px 0", fontSize: "10px" }}>
+              Date: {invoiceDate}
+            </p>
+            <p style={{ margin: "2px 0", fontSize: "10px" }}>
+              Guest No: GST-2026-0045
+            </p>
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "22px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "22px",
+          }}
+        >
           <div style={{ width: "48%" }}>
             <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill From</p>
             <p style={{ margin: 0 }}>Marvel Crunch Chikki</p>
             <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4" }}>
-              Plot No. 133, Shreeji Textile<br />
+              Plot No. 133, Shreeji Textile
+              <br />
               Velenja Sayan Road, Gujarat – 394150
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 99461 37919</p>
+            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>
+              +91 99461 37919
+            </p>
           </div>
 
           <div style={{ width: "48%", textAlign: "right" }}>
             <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill To</p>
             <p style={{ margin: 0, fontWeight: "600" }}>{customerName}</p>
-            <p style={{ margin: "4px 0 0", fontSize: "11px", lineHeight: "1.4", whiteSpace: "pre-line" }}>
+            <p
+              style={{
+                margin: "4px 0 0",
+                fontSize: "11px",
+                lineHeight: "1.4",
+                whiteSpace: "pre-line",
+              }}
+            >
               {addressLines.join("\n")}
             </p>
           </div>
@@ -212,11 +243,23 @@ function InvoicePDF({ order }) {
               <tr key={idx}>
                 <td style={{ border: "1px solid #ddd", padding: "8px" }}>
                   <strong>{item.title}</strong>
-                  <div style={{ fontSize: "10px", color: "#777" }}>per {item.unit}</div>
+                  <div style={{ fontSize: "10px", color: "#777" }}>
+                    per {item.unit}
+                  </div>
                 </td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
-                <td style={{ border: "1px solid #ddd", textAlign: "right", paddingRight: "10px" }}>
+                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
+                  {item.quantity}
+                </td>
+                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
+                  ₹{item.rate.toFixed(2)}
+                </td>
+                <td
+                  style={{
+                    border: "1px solid #ddd",
+                    textAlign: "right",
+                    paddingRight: "10px",
+                  }}
+                >
                   ₹{item.amount.toFixed(2)}
                 </td>
               </tr>
@@ -331,15 +374,15 @@ function OrderStatusTimeline({ order }) {
 
         {steps.map((step, index) => {
           const Icon = step.icon;
-          const isCompleted = index < activeIndex;
+          const isCompleted = index <= activeIndex;
           const isActive = index === activeIndex;
 
           const dateText =
             isCompleted && getStatusDate(step.key)
               ? getStatusDate(step.key)
               : isCompleted
-              ? "Completed"
-              : "Expected soon";
+                ? "Completed"
+                : "Expected soon";
 
           return (
             <div
@@ -351,8 +394,8 @@ function OrderStatusTimeline({ order }) {
                   isCompleted
                     ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
                     : isActive
-                    ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
-                    : "bg-gray-300 text-gray-500"
+                      ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
+                      : "bg-gray-300 text-gray-500"
                 }`}
               >
                 <Icon className="w-6 h-6" />
@@ -361,7 +404,9 @@ function OrderStatusTimeline({ order }) {
               <div className="mt-7 text-center">
                 <p
                   className={`font-medium text-sm ${
-                    isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"
+                    isCompleted || isActive
+                      ? "text-[var(--text-main)]"
+                      : "text-gray-500"
                   }`}
                 >
                   {step.label}
@@ -373,7 +418,9 @@ function OrderStatusTimeline({ order }) {
                     order.estimatedDelivery && (
                       <>
                         <br />
-                        <span className="font-medium">Est: {order.estimatedDelivery}</span>
+                        <span className="font-medium">
+                          Est: {order.estimatedDelivery}
+                        </span>
                       </>
                     )}
                 </p>
@@ -405,7 +452,14 @@ function ReviewModal({ order, isOpen, onClose }) {
     setTimeout(() => {
       setShowThankYou(false);
       onClose();
-      setFormData({ name: "", email: "", rating: 0, title: "", details: "", photo: [] });
+      setFormData({
+        name: "",
+        email: "",
+        rating: 0,
+        title: "",
+        details: "",
+        photo: [],
+      });
     }, 2500);
   };
 
@@ -439,7 +493,9 @@ function ReviewModal({ order, isOpen, onClose }) {
               <h3 className="text-2xl font-semibold mb-2">
                 Add Review for Order #{order?.id || order?._id?.slice(-8)}
               </h3>
-              <p className="text-[var(--text-muted)] mb-6">Share your experience with this order</p>
+              <p className="text-[var(--text-muted)] mb-6">
+                Share your experience with this order
+              </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -449,7 +505,9 @@ function ReviewModal({ order, isOpen, onClose }) {
                     required
                     className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                   />
                   <input
                     type="email"
@@ -457,21 +515,29 @@ function ReviewModal({ order, isOpen, onClose }) {
                     required
                     className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className="block mb-2 font-medium">Your Rating *</label>
+                  <label className="block mb-2 font-medium">
+                    Your Rating *
+                  </label>
                   <div className="flex space-x-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
                         fill="currentColor"
                         className={`w-10 h-10 cursor-pointer transition ${
-                          star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"
+                          star <= formData.rating
+                            ? "text-[var(--accent)] scale-110"
+                            : "text-gray-300"
                         }`}
-                        onClick={() => setFormData({ ...formData, rating: star })}
+                        onClick={() =>
+                          setFormData({ ...formData, rating: star })
+                        }
                       />
                     ))}
                   </div>
@@ -483,7 +549,9 @@ function ReviewModal({ order, isOpen, onClose }) {
                   required
                   className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                 />
 
                 <textarea
@@ -492,24 +560,36 @@ function ReviewModal({ order, isOpen, onClose }) {
                   rows="5"
                   className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none"
                   value={formData.details}
-                  onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, details: e.target.value })
+                  }
                 />
 
                 <div>
-                  <label className="block mb-2 font-medium">Add Photos / Videos (Optional)</label>
+                  <label className="block mb-2 font-medium">
+                    Add Photos / Videos (Optional)
+                  </label>
                   <div
                     className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition"
-                    onClick={() => document.getElementById("reviewFileInput").click()}
+                    onClick={() =>
+                      document.getElementById("reviewFileInput").click()
+                    }
                   >
                     <UploadCloud className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                     <p className="text-gray-500 font-medium">
-                      Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span>
+                      Drag & drop or{" "}
+                      <span className="text-[var(--primary)] font-semibold">
+                        Browse
+                      </span>
                     </p>
 
                     {formData.photo.length > 0 && (
                       <div className="flex flex-wrap gap-3 mt-4 justify-center">
                         {formData.photo.map((file, idx) => (
-                          <div key={idx} className="relative w-28 h-28 rounded overflow-hidden border">
+                          <div
+                            key={idx}
+                            className="relative w-28 h-28 rounded overflow-hidden border"
+                          >
                             {file.type.startsWith("image/") ? (
                               <img
                                 src={URL.createObjectURL(file)}
@@ -529,7 +609,9 @@ function ReviewModal({ order, isOpen, onClose }) {
                                 e.stopPropagation();
                                 setFormData({
                                   ...formData,
-                                  photo: formData.photo.filter((_, i) => i !== idx),
+                                  photo: formData.photo.filter(
+                                    (_, i) => i !== idx,
+                                  ),
                                 });
                               }}
                               className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm"
@@ -551,7 +633,10 @@ function ReviewModal({ order, isOpen, onClose }) {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        photo: [...formData.photo, ...Array.from(e.target.files)],
+                        photo: [
+                          ...formData.photo,
+                          ...Array.from(e.target.files),
+                        ],
                       })
                     }
                   />
@@ -584,10 +669,22 @@ function ReviewModal({ order, isOpen, onClose }) {
                   exit={{ opacity: 0 }}
                   className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl"
                 >
-                  <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
-                    <img src="/review.png" alt="Thank you" className="w-32 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-[var(--secondary)] mb-2">Thank You!</h3>
-                    <p className="text-[var(--text-muted)]">Your review has been submitted successfully.</p>
+                  <motion.div
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    className="text-center"
+                  >
+                    <img
+                      src="/review.png"
+                      alt="Thank you"
+                      className="w-32 mx-auto mb-4"
+                    />
+                    <h3 className="text-2xl font-bold text-[var(--secondary)] mb-2">
+                      Thank You!
+                    </h3>
+                    <p className="text-[var(--text-muted)]">
+                      Your review has been submitted successfully.
+                    </p>
                   </motion.div>
                 </motion.div>
               )}
@@ -620,7 +717,9 @@ export default function OrdersPage() {
           throw new Error(res.data?.message || "Failed to load orders");
         }
       } catch (err) {
-        setError(err.response?.data?.message || err.message || "Something went wrong");
+        setError(
+          err.response?.data?.message || err.message || "Something went wrong",
+        );
       } finally {
         setLoading(false);
       }
@@ -648,7 +747,9 @@ export default function OrdersPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
         <h2 className="text-2xl font-bold mb-4">No orders yet</h2>
-        <p className="text-gray-600 mb-8">When you place an order, it will appear here.</p>
+        <p className="text-gray-600 mb-8">
+          When you place an order, it will appear here.
+        </p>
         <Link
           to="/products"
           className="px-8 py-4 bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--secondary)] transition"
@@ -681,7 +782,10 @@ export default function OrdersPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-6 flex justify-center items-center gap-3 text-white text-sm sm:text-base"
           >
-            <Link to="/" className="hover:text-[var(--text-main)] hover:font-bold hover:underline font-medium transition-all">
+            <Link
+              to="/"
+              className="hover:text-[var(--text-main)] hover:font-bold hover:underline font-medium transition-all"
+            >
               Home
             </Link>
             <span className="font-bold">\\</span>
@@ -691,7 +795,9 @@ export default function OrdersPage() {
       </section>
 
       <div className="max-w-6xl mx-auto px-4 py-12 space-y-10">
-        <h2 className="text-2xl font-bold text-[var(--text-main)]">Orders ({orders.length})</h2>
+        <h2 className="text-2xl font-bold text-[var(--text-main)]">
+          Orders ({orders.length})
+        </h2>
 
         {orders.map((order) => (
           <div
@@ -751,24 +857,31 @@ export default function OrdersPage() {
             <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
               <span
                 className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  (order.orderStatus || order.status || "").toLowerCase() === "delivered"
+                  (order.orderStatus || order.status || "").toLowerCase() ===
+                  "delivered"
                     ? "bg-green-100 text-green-700"
                     : "bg-amber-100 text-amber-800"
                 }`}
               >
                 {(order.orderStatus || order.status || "Pending")
                   .split(" ")
-                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                  .map(
+                    (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+                  )
                   .join(" ")}
               </span>
 
               <div className="flex flex-wrap gap-3">
-                {(order.orderStatus || order.status || "").toLowerCase() !== "delivered" && (
+                {(order.orderStatus || order.status || "").toLowerCase() !==
+                  "delivered" && (
                   <button
                     onClick={() => {
                       document
                         .getElementById(`order-${order._id || order.id}`)
-                        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
                     }}
                     className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
                   >
@@ -776,7 +889,8 @@ export default function OrdersPage() {
                   </button>
                 )}
 
-                {(order.orderStatus || order.status || "").toLowerCase() === "delivered" && (
+                {(order.orderStatus || order.status || "").toLowerCase() ===
+                  "delivered" && (
                   <button
                     onClick={() => setSelectedOrderForReview(order)}
                     className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"

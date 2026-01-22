@@ -30,7 +30,7 @@ const downloadInvoice = async (order) => {
           if (img.complete && img.naturalHeight !== 0) resolve();
           else {
             img.onload = resolve;
-            img.onerror = resolve; // continue even if error
+            img.onerror = resolve;
           }
         })
     )
@@ -62,7 +62,7 @@ const downloadInvoice = async (order) => {
 function InvoicePDF({ order }) {
   const billing = order.billingDetails || {};
   const customerName = [billing.firstName, billing.lastName].filter(Boolean).join(" ") || "Valued Customer";
-  
+
   const addressLines = [
     billing.address,
     [billing.city, billing.state].filter(Boolean).join(", "),
@@ -193,7 +193,7 @@ function InvoicePDF({ order }) {
         >
           <thead>
             <tr style={{ backgroundColor: "#f7f7f7", fontWeight: "700" }}>
-              {["Product", "Qty", "Rate", "Shipping", "Amount"].map((h) => (
+              {["Product", "Qty", "Rate", "Amount"].map((h) => (
                 <th
                   key={h}
                   style={{
@@ -216,7 +216,6 @@ function InvoicePDF({ order }) {
                 </td>
                 <td style={{ border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
                 <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹{shipping.toFixed(2)}</td>
                 <td style={{ border: "1px solid #ddd", textAlign: "right", paddingRight: "10px" }}>
                   ₹{item.amount.toFixed(2)}
                 </td>
@@ -281,10 +280,8 @@ function OrderStatusTimeline({ order }) {
     .toLowerCase()
     .trim();
 
-  // Normalize backend statuses (UI SAME rahegi)
   const normalizedStatus = rawStatus === "shipped" ? "on the way" : rawStatus;
 
-  // Step order (UI labels se match)
   const steps = [
     { key: "placed", label: "Order Placed", icon: ShoppingBag },
     { key: "accepted", label: "Accepted", icon: CheckCircle },
@@ -293,24 +290,22 @@ function OrderStatusTimeline({ order }) {
     { key: "delivered", label: "Delivered", icon: CheckCircle },
   ];
 
-  // Backend status → step index
   const getStepIndex = () => {
     if (normalizedStatus === "delivered") return 4;
     if (normalizedStatus === "on the way") return 3;
     if (normalizedStatus === "processing") return 2;
     if (normalizedStatus === "accepted") return 1;
-    return 0; // pending / placed
+    return 0;
   };
 
   const activeIndex = getStepIndex();
 
-  // Get real date from statusHistory
   const getStatusDate = (statusKey) => {
     const history = order.statusHistory || [];
     const entry = history
       .slice()
       .reverse()
-      .find((h) => h.status === statusKey);
+      .find((h) => h.status?.toLowerCase() === statusKey);
 
     if (!entry) return null;
 
@@ -328,24 +323,16 @@ function OrderStatusTimeline({ order }) {
       </h3>
 
       <div className="flex items-center justify-between relative">
-        {/* Background Line */}
         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
-
-        {/* Progress Line */}
         <div
           className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
-          style={{
-            width: `${(activeIndex / (steps.length - 1)) * 100}%`,
-          }}
+          style={{ width: `${(activeIndex / (steps.length - 1)) * 100}%` }}
         />
 
         {steps.map((step, index) => {
           const Icon = step.icon;
-          const isCompleted =
-        index < activeIndex ||
-        (index === activeIndex && activeIndex > 0);
-
-            const isActive = index === activeIndex;
+          const isCompleted = index < activeIndex;
+          const isActive = index === activeIndex;
 
           const dateText =
             isCompleted && getStatusDate(step.key)
@@ -374,25 +361,19 @@ function OrderStatusTimeline({ order }) {
               <div className="mt-7 text-center">
                 <p
                   className={`font-medium text-sm ${
-                    isCompleted || isActive
-                      ? "text-[var(--text-main)]"
-                      : "text-gray-500"
+                    isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"
                   }`}
                 >
                   {step.label}
                 </p>
-
                 <p className="text-xs text-gray-600 mt-1">
                   {dateText}
-
                   {step.key === "delivered" &&
                     !order.deliveredDate &&
                     order.estimatedDelivery && (
                       <>
                         <br />
-                        <span className="font-medium">
-                          Est: {order.estimatedDelivery}
-                        </span>
+                        <span className="font-medium">Est: {order.estimatedDelivery}</span>
                       </>
                     )}
                 </p>
@@ -416,6 +397,7 @@ function ReviewModal({ order, isOpen, onClose }) {
     photo: [],
   });
   const [showThankYou, setShowThankYou] = useState(false);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.rating) return alert("Please select a rating!");
@@ -426,7 +408,9 @@ function ReviewModal({ order, isOpen, onClose }) {
       setFormData({ name: "", email: "", rating: 0, title: "", details: "", photo: [] });
     }, 2500);
   };
+
   if (!isOpen) return null;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -444,17 +428,39 @@ function ReviewModal({ order, isOpen, onClose }) {
             className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10">
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10"
+            >
               <X className="w-6 h-6" />
             </button>
+
             <div className="p-6 sm:p-8">
-              <h3 className="text-2xl font-semibold mb-2">Add Review for Order #{order?.id || order?._id?.slice(-8)}</h3>
+              <h3 className="text-2xl font-semibold mb-2">
+                Add Review for Order #{order?.id || order?._id?.slice(-8)}
+              </h3>
               <p className="text-[var(--text-muted)] mb-6">Share your experience with this order</p>
+
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input type="text" placeholder="Name *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                  <input type="email" placeholder="Email *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                  <input
+                    type="text"
+                    placeholder="Name *"
+                    required
+                    className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email *"
+                    required
+                    className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
                 </div>
+
                 <div>
                   <label className="block mb-2 font-medium">Your Rating *</label>
                   <div className="flex space-x-2">
@@ -462,58 +468,127 @@ function ReviewModal({ order, isOpen, onClose }) {
                       <Star
                         key={star}
                         fill="currentColor"
-                        className={`w-10 h-10 cursor-pointer transition ${star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"}`}
+                        className={`w-10 h-10 cursor-pointer transition ${
+                          star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"
+                        }`}
                         onClick={() => setFormData({ ...formData, rating: star })}
                       />
                     ))}
                   </div>
                 </div>
-                <input type="text" placeholder="Review Title *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
-                <textarea placeholder="Write your detailed review *" required rows="5" className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
+
+                <input
+                  type="text"
+                  placeholder="Review Title *"
+                  required
+                  className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+
+                <textarea
+                  placeholder="Write your detailed review *"
+                  required
+                  rows="5"
+                  className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none"
+                  value={formData.details}
+                  onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                />
+
                 <div>
                   <label className="block mb-2 font-medium">Add Photos / Videos (Optional)</label>
-
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition" onClick={() => document.getElementById("reviewFileInput").click()}>
+                  <div
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition"
+                    onClick={() => document.getElementById("reviewFileInput").click()}
+                  >
                     <UploadCloud className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500 font-medium">Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span></p>
-                    {formData.photo.length > 0 && 
+                    <p className="text-gray-500 font-medium">
+                      Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span>
+                    </p>
+
+                    {formData.photo.length > 0 && (
                       <div className="flex flex-wrap gap-3 mt-4 justify-center">
                         {formData.photo.map((file, idx) => (
                           <div key={idx} className="relative w-28 h-28 rounded overflow-hidden border">
-                            {file.type.startsWith("image/") ? <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" /> : <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" controls />}
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, photo: formData.photo.filter((_, i) => i !== idx) }); }} className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">×</button>
+                            {file.type.startsWith("image/") ? (
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt="preview"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <video
+                                src={URL.createObjectURL(file)}
+                                className="w-full h-full object-cover"
+                                controls
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFormData({
+                                  ...formData,
+                                  photo: formData.photo.filter((_, i) => i !== idx),
+                                });
+                              }}
+                              className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm"
+                            >
+                              ×
+                            </button>
                           </div>
                         ))}
                       </div>
                     )}
-
                   </div>
 
-                  <input id="reviewFileInput" type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => setFormData({ ...formData, photo: [...formData.photo, ...Array.from(e.target.files)] })} />
+                  <input
+                    id="reviewFileInput"
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        photo: [...formData.photo, ...Array.from(e.target.files)],
+                      })
+                    }
+                  />
                 </div>
+
                 <div className="flex justify-end gap-3 pt-4">
-                  <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition">Cancel</button>
-                  <button type="submit" className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition">Submit Review</button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition"
+                  >
+                    Submit Review
+                  </button>
+                </div>
               </form>
             </div>
 
             <AnimatePresence>
-
               {showThankYou && (
-
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl">
-
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl"
+                >
                   <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
-
                     <img src="/review.png" alt="Thank you" className="w-32 mx-auto mb-4" />
-
                     <h3 className="text-2xl font-bold text-[var(--secondary)] mb-2">Thank You!</h3>
-
                     <p className="text-[var(--text-muted)]">Your review has been submitted successfully.</p>
-
                   </motion.div>
-
                 </motion.div>
               )}
             </AnimatePresence>
@@ -586,9 +661,12 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen">
-      {/* HERO - unchanged */}
       <section className="relative h-[50vh] flex items-center justify-center overflow-hidden">
-        <img src="/login.png" alt="Chikki Banner" className="absolute inset-0 w-full h-full object-cover" />
+        <img
+          src="/login.png"
+          alt="Chikki Banner"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-[var(--secondary)]/30"></div>
         <div className="relative z-10 text-center px-4">
           <motion.h1
@@ -612,7 +690,6 @@ export default function OrdersPage() {
         </div>
       </section>
 
-      {/* ORDERS LIST */}
       <div className="max-w-6xl mx-auto px-4 py-12 space-y-10">
         <h2 className="text-2xl font-bold text-[var(--text-main)]">Orders ({orders.length})</h2>
 
@@ -622,7 +699,6 @@ export default function OrdersPage() {
             id={`order-${order._id || order.id}`}
             className="bg-[var(--bg-card)] border border-[var(--secondary)] rounded-xl shadow-sm overflow-hidden"
           >
-            {/* ORDER HEADER */}
             <div className="bg-[var(--accent)] text-[var(--text-main)] px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm md:text-base">
               <div>
                 <span className="font-semibold">Order ID</span>
@@ -649,7 +725,6 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* ORDER ITEMS */}
             <div className="divide-y divide-gray-200">
               {(order.items || []).map((item, idx) => (
                 <div key={idx} className="flex items-center gap-4 px-6 py-4">
@@ -673,7 +748,6 @@ export default function OrdersPage() {
 
             <OrderStatusTimeline order={order} />
 
-            {/* STATUS & ACTIONS */}
             <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
               <span
                 className={`px-3 py-1 rounded-full text-sm font-semibold ${
@@ -720,13 +794,11 @@ export default function OrdersPage() {
               </div>
             </div>
 
-            {/* HIDDEN PDF */}
             <InvoicePDF order={order} />
           </div>
         ))}
       </div>
 
-      {/* Review Modal - unchanged for now */}
       <ReviewModal
         order={selectedOrderForReview}
         isOpen={!!selectedOrderForReview}

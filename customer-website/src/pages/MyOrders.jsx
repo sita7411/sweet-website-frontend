@@ -341,8 +341,11 @@ function OrderStatusTimeline({ order }) {
 
         {steps.map((step, index) => {
           const Icon = step.icon;
-          const isCompleted = index <= activeIndex;
-          const isActive = index === activeIndex;
+        const isCompleted =
+        index < activeIndex ||
+        (index === activeIndex && normalizedStatus !== "placed");
+
+      const isActive = index === activeIndex;
 
           const dateText =
             isCompleted && getStatusDate(step.key)

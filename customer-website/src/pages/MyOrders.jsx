@@ -18,7 +18,7 @@ import axios from "axios";
 //  CONFIG – adjust according to your project
 // ────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE;
-const ORDERS_URL = `${API_BASE}/api/orders`; // assuming /api/orders is protected route
+const ORDERS_URL = `${API_BASE}/api/orders/`;
 
 /* ================== PDF GENERATION ================== */
 const downloadInvoice = async (order) => {

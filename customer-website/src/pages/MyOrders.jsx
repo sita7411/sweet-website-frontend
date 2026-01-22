@@ -278,18 +278,22 @@ function InvoicePDF({ order }) {
 
 /* ================== ORDER STATUS TIMELINE ================== */
 function OrderStatusTimeline({ order }) {
-  const statusOrder = [
-    "pending",
-    "placed",
-    "confirmed",
-    "processing",
-    "on the way",
-    "shipped",
-    "delivered",
-  ];
+  // Map backend statuses to timeline progress (0 to 4)
+  const statusMap = {
+    pending: 0,
+    placed: 0,          // Placed → step 0 completed
+    accepted: 1,
+    confirmed: 1,       // Confirmed → step 1 completed
+    processing: 2,      // Processing → step 2 completed
+    "in progress": 2,
+    "on the way": 3,
+    shipped: 3,
+    delivered: 4,
+    rejected: -1,
+    cancelled: -1,
+  };
 
-  const currentIdx = statusOrder.indexOf(order.orderStatus?.toLowerCase() || "pending");
-  const completedUpTo = Math.max(0, currentIdx);
+  const currentStep = statusMap[order.orderStatus?.toLowerCase() || order.status?.toLowerCase()] ?? 0;
 
   const steps = [
     { label: "Order Placed", icon: ShoppingBag },
@@ -299,11 +303,16 @@ function OrderStatusTimeline({ order }) {
     { label: "Delivered", icon: CheckCircle },
   ];
 
+  // For better UX: when order is "placed", show "Confirmed" as active/next
+  const displayCompleted = currentStep;
+  const displayActive = currentStep === 0 ? 1 : currentStep + 1 > 4 ? -1 : currentStep + 1;
+
   const getDateText = (index) => {
-    if (index > completedUpTo) return "Expected";
-    if (index === completedUpTo && order.orderStatus?.toLowerCase() === "delivered") {
-      return new Date(order.updatedAt || order.createdAt).toLocaleDateString("en-IN");
+    if (index > displayCompleted) return "Expected";
+    if (index === displayCompleted && (order.orderStatus || order.status)?.toLowerCase() === "delivered") {
+      return order.deliveredDate || new Date(order.updatedAt || order.createdAt).toLocaleDateString("en-IN");
     }
+    if (index === displayActive) return "In Progress";
     return "—";
   };
 
@@ -311,31 +320,33 @@ function OrderStatusTimeline({ order }) {
     <div className="px-6 py-8 bg-gray-50 border-t border-gray-200">
       <h3 className="text-lg font-semibold mb-6 text-[var(--text-main)]">Order Status</h3>
       <div className="flex items-center justify-between relative">
+        {/* Background line */}
         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
+        {/* Progress line – fill up to current + active */}
         <div
           className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
-          style={{ width: `${Math.max(0, completedUpTo) * 25}%` }}
+          style={{ width: `${Math.max(0, displayCompleted + (displayActive >= 0 ? 0.5 : 0)) * 25}%` }}
         />
 
         {steps.map((step, index) => {
           const Icon = step.icon;
-          const isCompleted = index <= completedUpTo;
-          const isActive = index === completedUpTo + 1;
+          const isCompleted = index <= displayCompleted;
+          const isActive = index === displayActive;
 
           return (
             <div key={index} className="flex flex-col items-center relative z-10 flex-1">
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${
                   isCompleted
-                    ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
+                    ? "bg-[var(--secondary)] text-white border-[var(--secondary)] shadow-lg scale-110"
                     : isActive
-                    ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
-                    : "bg-gray-300 text-gray-500"
+                    ? "bg-white text-[var(--primary)] border-[var(--primary)] ring-4 ring-[var(--primary)]/30 scale-110 animate-pulse"
+                    : "bg-gray-200 text-gray-500 border-gray-300"
                 }`}
               >
                 <Icon className="w-6 h-6" />
               </div>
-              <div className="mt-7 text-center">
+              <div className="mt-4 text-center">
                 <p
                   className={`font-medium text-sm ${
                     isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"
@@ -343,7 +354,9 @@ function OrderStatusTimeline({ order }) {
                 >
                   {step.label}
                 </p>
-                <p className="text-xs text-gray-600 mt-1">{getDateText(index)}</p>
+                <p className="text-xs mt-1 whitespace-nowrap" style={{ color: isActive ? "var(--primary)" : "gray" }}>
+                  {getDateText(index)}
+                </p>
               </div>
             </div>
           );
@@ -352,7 +365,6 @@ function OrderStatusTimeline({ order }) {
     </div>
   );
 }
-
 /* ================== REVIEW MODAL ================== */
 function ReviewModal({ order, isOpen, onClose }) {
   const [formData, setFormData] = useState({

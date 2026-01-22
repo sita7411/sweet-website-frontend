@@ -17,7 +17,7 @@ import axios from "axios";
 // ────────────────────────────────────────────────
 //  CONFIG – adjust according to your project
 // ────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
 const ORDERS_URL = `${API_BASE}/orders`; // assuming /api/orders is protected route
 
 /* ================== PDF GENERATION ================== */

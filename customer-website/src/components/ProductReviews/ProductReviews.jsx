@@ -4,7 +4,8 @@ import { Star, UploadCloud } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "https://sweet-backend-nhwt.onrender.com";
+const API_BASE =
+  import.meta.env.VITE_API_BASE || "https://sweet-backend-nhwt.onrender.com";
 
 const StarRating = ({ rating = 0, size = 4 }) => (
   <div className="flex items-center">
@@ -19,8 +20,20 @@ const StarRating = ({ rating = 0, size = 4 }) => (
 );
 
 const Avatar = ({ name, img }) => {
-  if (img) return <img src={img} alt={name} className="w-12 h-12 rounded-full object-cover" />;
-  const initials = name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "?";
+  if (img)
+    return (
+      <img
+        src={img}
+        alt={name}
+        className="w-12 h-12 rounded-full object-cover"
+      />
+    );
+  const initials =
+    name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() || "?";
   return (
     <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-[var(--secondary)] font-semibold">
       {initials}
@@ -55,7 +68,9 @@ export default function ReviewSection({ productId }) {
       try {
         setLoading(true);
         setError(null);
-        const res = await axios.get(`${API_BASE}/api/reviews/product/${productId}`);
+        const res = await axios.get(
+          `${API_BASE}/api/reviews/product/${productId}`,
+        );
         if (res.data.success) {
           setReviews(res.data.reviews || []);
           setStats(res.data.stats || { average: 0, total: 0 });
@@ -78,21 +93,33 @@ export default function ReviewSection({ productId }) {
     if (!formData.rating) return alert("Please select a rating!");
 
     try {
-      const payload = {
-        productId,
-        name: formData.name.trim() || undefined,
-        email: formData.email.trim() || undefined,
-        rating: formData.rating,
-        title: formData.title.trim() || undefined,
-        comment: formData.details.trim(),
-        images: [], // Add Cloudinary upload later
-      };
+      const formPayload = new FormData();
 
-      const res = await axios.post(`${API_BASE}/api/reviews`, payload, {
+      // Text fields
+      formPayload.append("productId", productId);
+      if (formData.name?.trim())
+        formPayload.append("name", formData.name.trim());
+      if (formData.email?.trim())
+        formPayload.append("email", formData.email.trim());
+      formPayload.append("rating", formData.rating);
+      if (formData.title?.trim())
+        formPayload.append("title", formData.title.trim());
+      formPayload.append("comment", formData.details.trim());
+
+      // Attach all selected files
+      formData.photo.forEach((file) => {
+        formPayload.append("images", file); // ← field name must match multer .array("images")
+      });
+
+      const res = await axios.post(`${API_BASE}/api/reviews`, formPayload, {
         withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
       if (res.data.success) {
+        // For instant preview — create object URLs
         const newReview = {
           _id: Date.now().toString(),
           guestName: formData.name.trim() || "Anonymous",
@@ -100,45 +127,69 @@ export default function ReviewSection({ productId }) {
           title: formData.title.trim(),
           comment: formData.details.trim(),
           createdAt: new Date().toISOString(),
-          isVerifiedPurchase: true, // optimistic
           images: formData.photo.map((file) => URL.createObjectURL(file)),
+          // isVerifiedPurchase: res.data.review?.isVerifiedPurchase || false,
         };
 
         setReviews([newReview, ...reviews]);
         setShowThankYou(true);
-        setFormData({ name: "", email: "", rating: 0, title: "", details: "", photo: [] });
+        setFormData({
+          name: "",
+          email: "",
+          rating: 0,
+          title: "",
+          details: "",
+          photo: [],
+        });
         setShowForm(false);
 
         setTimeout(() => setShowThankYou(false), 3000);
       }
     } catch (err) {
       console.error("Review submit error:", err);
-      alert(err.response?.data?.message || "Failed to submit review. Please try again.");
+      alert(
+        err.response?.data?.message ||
+          "Failed to submit review. Please try again.",
+      );
     }
   };
 
   if (loading) {
-    return <div className="max-w-5xl mx-auto p-6 text-center">Loading reviews...</div>;
+    return (
+      <div className="max-w-5xl mx-auto p-6 text-center">
+        Loading reviews...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="max-w-5xl mx-auto p-6 text-center text-red-600">{error}</div>;
+    return (
+      <div className="max-w-5xl mx-auto p-6 text-center text-red-600">
+        {error}
+      </div>
+    );
   }
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 text-[var(--text-main)] relative">
       <div className="mb-10">
-        <h2 className="text-3xl sm:text-4xl font-semibold mb-3">Customer Reviews</h2>
+        <h2 className="text-3xl sm:text-4xl font-semibold mb-3">
+          Customer Reviews
+        </h2>
         <div className="flex flex-col sm:flex-row items-start sm:items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-3">
           <span className="text-4xl font-bold">{stats.average.toFixed(1)}</span>
           <StarRating rating={Math.round(stats.average)} size={6} />
-          <span className="text-[var(--text-muted)]">({stats.total} Reviews)</span>
+          <span className="text-[var(--text-muted)]">
+            ({stats.total} Reviews)
+          </span>
         </div>
 
         <div className="mb-8 space-y-2">
           {[5, 4, 3, 2, 1].map((star) => {
             const count = reviews.filter((r) => r.rating === star).length;
-            const percentage = reviews.length ? (count / reviews.length) * 100 : 0;
+            const percentage = reviews.length
+              ? (count / reviews.length) * 100
+              : 0;
             return (
               <div key={star} className="flex items-center space-x-2">
                 <div className="flex w-20">
@@ -147,9 +198,14 @@ export default function ReviewSection({ productId }) {
                   ))}
                 </div>
                 <div className="flex-1 bg-gray-200 h-3 rounded overflow-hidden">
-                  <div className="bg-[var(--accent)] h-3 rounded" style={{ width: `${percentage}%` }} />
+                  <div
+                    className="bg-[var(--accent)] h-3 rounded"
+                    style={{ width: `${percentage}%` }}
+                  />
                 </div>
-                <span className="text-sm text-[var(--text-muted)] w-6">{count}</span>
+                <span className="text-sm text-[var(--text-muted)] w-6">
+                  {count}
+                </span>
               </div>
             );
           })}
@@ -180,7 +236,9 @@ export default function ReviewSection({ productId }) {
                   required
                   className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                 />
                 <input
                   type="email"
@@ -188,7 +246,9 @@ export default function ReviewSection({ productId }) {
                   required
                   className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                 />
               </div>
 
@@ -200,7 +260,9 @@ export default function ReviewSection({ productId }) {
                       key={star}
                       fill="currentColor"
                       className={`w-8 h-8 cursor-pointer transition ${
-                        star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"
+                        star <= formData.rating
+                          ? "text-[var(--accent)] scale-110"
+                          : "text-gray-300"
                       }`}
                       onClick={() => setFormData({ ...formData, rating: star })}
                     />
@@ -214,7 +276,9 @@ export default function ReviewSection({ productId }) {
                 required
                 className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
               />
 
               <textarea
@@ -222,18 +286,25 @@ export default function ReviewSection({ productId }) {
                 required
                 className="border p-3 rounded w-full h-32 focus:ring-2 focus:ring-[var(--primary)]"
                 value={formData.details}
-                onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, details: e.target.value })
+                }
               />
 
               <div>
-                <label className="block mb-2 font-medium">Photo / Video (Optional)</label>
+                <label className="block mb-2 font-medium">
+                  Photo / Video (Optional)
+                </label>
                 <div
                   className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[var(--accent)] transition relative"
                   onClick={() => document.getElementById("fileInput").click()}
                 >
                   <UploadCloud className="h-12 w-12 text-gray-400 mx-auto" />
                   <p className="text-gray-500 font-medium mt-2">
-                    Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span>
+                    Drag & drop or{" "}
+                    <span className="text-[var(--primary)] font-semibold">
+                      Browse
+                    </span>
                   </p>
 
                   {formData.photo?.length > 0 && (
@@ -241,11 +312,22 @@ export default function ReviewSection({ productId }) {
                       {formData.photo.map((file, idx) => {
                         const url = URL.createObjectURL(file);
                         return (
-                          <div key={idx} className="relative w-24 h-24 rounded overflow-hidden border">
+                          <div
+                            key={idx}
+                            className="relative w-24 h-24 rounded overflow-hidden border"
+                          >
                             {file.type.startsWith("image") ? (
-                              <img src={url} alt="preview" className="w-full h-full object-cover" />
+                              <img
+                                src={url}
+                                alt="preview"
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
-                              <video src={url} className="w-full h-full object-cover" controls />
+                              <video
+                                src={url}
+                                className="w-full h-full object-cover"
+                                controls
+                              />
                             )}
                             <button
                               type="button"
@@ -273,7 +355,10 @@ export default function ReviewSection({ productId }) {
                   className="hidden"
                   onChange={(e) => {
                     const files = Array.from(e.target.files);
-                    setFormData({ ...formData, photo: [...(formData.photo || []), ...files] });
+                    setFormData({
+                      ...formData,
+                      photo: [...(formData.photo || []), ...files],
+                    });
                   }}
                 />
               </div>
@@ -310,11 +395,9 @@ export default function ReviewSection({ productId }) {
                   <div>
                     <p className="font-medium flex items-center gap-2">
                       {review.guestName || review.name || "Anonymous"}
-                      {review.isVerifiedPurchase && (
-                        <span className="text-xs bg-[var(--secondary)] text-white px-2 py-0.5 rounded-full">
-                          Verified Purchase
-                        </span>
-                      )}
+                      <span className="text-xs bg-[var(--secondary)] text-white px-2 py-0.5 rounded-full">
+                        Verified Purchase
+                      </span>
                     </p>
                     <p className="text-xs text-[var(--text-muted)]">
                       {new Date(review.createdAt).toLocaleDateString("en-IN", {
@@ -364,9 +447,15 @@ export default function ReviewSection({ productId }) {
               exit={{ scale: 0.8, opacity: 0 }}
             >
               <div className="flex items-center justify-center -mb-30 -mt-9">
-                <img src="/review.png" alt="Thank You" className="w-full h-full object-contain" />
+                <img
+                  src="/review.png"
+                  alt="Thank You"
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <h3 className="text-2xl font-semibold mb-2 text-[var(--secondary)]">Thank You!</h3>
+              <h3 className="text-2xl font-semibold mb-2 text-[var(--secondary)]">
+                Thank You!
+              </h3>
               <p className="text-[var(--text-muted)] mb-6">
                 Your review has been submitted successfully.
               </p>

@@ -19,6 +19,7 @@ import axios from "axios";
 // ────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
 const ORDERS_URL = `${API_BASE}/api/orders/`;
+const REVIEWS_URL = `${API_BASE}/api/reviews/`;
 
 /* ================== PDF GENERATION ================== */
 const downloadInvoice = async (order) => {
@@ -30,7 +31,6 @@ const downloadInvoice = async (order) => {
   element.style.left = "-9999px";
   element.style.top = "-9999px";
 
-  // Wait for images to load
   await Promise.all(
     Array.from(element.querySelectorAll("img")).map(
       (img) =>
@@ -40,8 +40,8 @@ const downloadInvoice = async (order) => {
             img.onload = resolve;
             img.onerror = resolve;
           }
-        }),
-    ),
+        })
+    )
   );
 
   try {
@@ -381,8 +381,8 @@ function OrderStatusTimeline({ order }) {
             isCompleted && getStatusDate(step.key)
               ? getStatusDate(step.key)
               : isCompleted
-                ? "Completed"
-                : "Expected soon";
+              ? "Completed"
+              : "Expected soon";
 
           return (
             <div
@@ -394,8 +394,8 @@ function OrderStatusTimeline({ order }) {
                   isCompleted
                     ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
                     : isActive
-                      ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
-                      : "bg-gray-300 text-gray-500"
+                    ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
+                    : "bg-gray-300 text-gray-500"
                 }`}
               >
                 <Icon className="w-6 h-6" />
@@ -440,27 +440,76 @@ function ReviewModal({ order, isOpen, onClose }) {
     email: "",
     rating: 0,
     title: "",
-    details: "",
+    comment: "",
     photo: [],
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.rating) return alert("Please select a rating!");
-    setShowThankYou(true);
-    setTimeout(() => {
-      setShowThankYou(false);
-      onClose();
-      setFormData({
-        name: "",
-        email: "",
-        rating: 0,
-        title: "",
-        details: "",
-        photo: [],
+
+    setIsSubmitting(true);
+
+    try {
+      const submitData = new FormData();
+
+      const firstItem = order.items?.[0];
+      if (!firstItem) {
+        throw new Error("No items found in this order");
+      }
+
+      // FIXED: Use the correct field name saved by backend
+      const productId = firstItem.productId;
+
+      if (!productId || productId.length !== 24) {
+        console.error("Missing or invalid productId in order item:", firstItem);
+        throw new Error("Product ID not found");
+      }
+
+      console.log("Submitting review for PRODUCT ID:", productId);
+
+      submitData.append("productId", productId);
+      submitData.append("orderId", order._id || order.id);
+      submitData.append("name", formData.name.trim() || "Anonymous");
+      if (formData.email?.trim()) submitData.append("email", formData.email.trim());
+      submitData.append("rating", formData.rating);
+      if (formData.title?.trim()) submitData.append("title", formData.title.trim());
+      submitData.append("comment", formData.comment.trim());
+
+      formData.photo.forEach((file) => submitData.append("images", file));
+
+      const res = await axios.post(REVIEWS_URL, submitData, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
       });
-    }, 2500);
+
+      if (res.data.success) {
+        setShowThankYou(true);
+        setTimeout(() => {
+          setShowThankYou(false);
+          onClose();
+          setFormData({
+            name: "",
+            email: "",
+            rating: 0,
+            title: "",
+            comment: "",
+            photo: [],
+          });
+        }, 2400);
+      }
+    } catch (err) {
+      console.error("Review submission error:", err);
+      alert(
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to submit review. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -490,11 +539,12 @@ function ReviewModal({ order, isOpen, onClose }) {
             </button>
 
             <div className="p-6 sm:p-8">
-              <h3 className="text-2xl font-semibold mb-2">
-                Add Review for Order #{order?.id || order?._id?.slice(-8)}
-              </h3>
+              <h3 className="text-2xl font-semibold mb-1">Review Product</h3>
+              <p className="text-lg font-medium text-[var(--secondary)] mb-2">
+                {order.items?.[0]?.name || order.items?.[0]?.title || "This Product"}
+              </p>
               <p className="text-[var(--text-muted)] mb-6">
-                Share your experience with this order
+                Share your experience with this item
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -522,9 +572,7 @@ function ReviewModal({ order, isOpen, onClose }) {
                 </div>
 
                 <div>
-                  <label className="block mb-2 font-medium">
-                    Your Rating *
-                  </label>
+                  <label className="block mb-2 font-medium">Your Rating *</label>
                   <div className="flex space-x-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
@@ -559,9 +607,9 @@ function ReviewModal({ order, isOpen, onClose }) {
                   required
                   rows="5"
                   className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none"
-                  value={formData.details}
+                  value={formData.comment}
                   onChange={(e) =>
-                    setFormData({ ...formData, details: e.target.value })
+                    setFormData({ ...formData, comment: e.target.value })
                   }
                 />
 
@@ -609,9 +657,7 @@ function ReviewModal({ order, isOpen, onClose }) {
                                 e.stopPropagation();
                                 setFormData({
                                   ...formData,
-                                  photo: formData.photo.filter(
-                                    (_, i) => i !== idx,
-                                  ),
+                                  photo: formData.photo.filter((_, i) => i !== idx),
                                 });
                               }}
                               className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm"
@@ -635,7 +681,7 @@ function ReviewModal({ order, isOpen, onClose }) {
                         ...formData,
                         photo: [
                           ...formData.photo,
-                          ...Array.from(e.target.files),
+                          ...Array.from(e.target.files || []),
                         ],
                       })
                     }
@@ -647,15 +693,19 @@ function ReviewModal({ order, isOpen, onClose }) {
                     type="button"
                     onClick={onClose}
                     className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition"
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </button>
 
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition"
+                    disabled={isSubmitting}
+                    className={`px-6 py-3 bg-[var(--primary)] text-white rounded transition ${
+                      isSubmitting ? "opacity-60 cursor-not-allowed" : "hover:bg-[var(--secondary)]"
+                    }`}
                   >
-                    Submit Review
+                    {isSubmitting ? "Submitting..." : "Submit Review"}
                   </button>
                 </div>
               </form>
@@ -712,18 +762,32 @@ export default function OrdersPage() {
           withCredentials: true,
         });
         if (res.data?.success) {
-          setOrders(res.data.data || res.data.orders || []);
+          const loadedOrders = res.data.data || res.data.orders || [];
+          setOrders(loadedOrders);
+
+          const deliveredOrder = loadedOrders.find((o) => {
+            const status = (o.orderStatus || o.status || "").toLowerCase().trim();
+            return status === "delivered" && !sessionStorage.getItem(`review_prompted_${o._id}`);
+          });
+
+          if (deliveredOrder) {
+            setTimeout(() => {
+              console.log("Auto-opening review modal for order:", deliveredOrder._id?.slice(-8));
+              setSelectedOrderForReview(deliveredOrder);
+            }, 1800);
+          }
         } else {
           throw new Error(res.data?.message || "Failed to load orders");
         }
       } catch (err) {
         setError(
-          err.response?.data?.message || err.message || "Something went wrong",
+          err.response?.data?.message || err.message || "Something went wrong"
         );
       } finally {
         setLoading(false);
       }
     };
+
     fetchOrders();
   }, []);
 
@@ -857,31 +921,24 @@ export default function OrdersPage() {
             <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
               <span
                 className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  (order.orderStatus || order.status || "").toLowerCase() ===
-                  "delivered"
+                  (order.orderStatus || order.status || "").toLowerCase() === "delivered"
                     ? "bg-green-100 text-green-700"
                     : "bg-amber-100 text-amber-800"
                 }`}
               >
                 {(order.orderStatus || order.status || "Pending")
                   .split(" ")
-                  .map(
-                    (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
-                  )
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
                   .join(" ")}
               </span>
 
               <div className="flex flex-wrap gap-3">
-                {(order.orderStatus || order.status || "").toLowerCase() !==
-                  "delivered" && (
+                {(order.orderStatus || order.status || "").toLowerCase() !== "delivered" && (
                   <button
                     onClick={() => {
                       document
                         .getElementById(`order-${order._id || order.id}`)
-                        ?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "center",
-                        });
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }}
                     className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
                   >
@@ -889,10 +946,16 @@ export default function OrdersPage() {
                   </button>
                 )}
 
-                {(order.orderStatus || order.status || "").toLowerCase() ===
-                  "delivered" && (
+                {(order.orderStatus || order.status || "").toLowerCase() === "delivered" && (
                   <button
-                    onClick={() => setSelectedOrderForReview(order)}
+                    onClick={() => {
+                      const firstItem = order.items?.[0];
+                      console.log(
+                        "Manual Add Review clicked → Product ID:",
+                        firstItem?.productId || "MISSING"
+                      );
+                      setSelectedOrderForReview(order);
+                    }}
                     className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
                   >
                     Add Review
@@ -913,6 +976,7 @@ export default function OrdersPage() {
         ))}
       </div>
 
+      {/* Review Modal (auto + manual) */}
       <ReviewModal
         order={selectedOrderForReview}
         isOpen={!!selectedOrderForReview}

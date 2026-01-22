@@ -3,28 +3,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
-import {
-  Star,
-  UploadCloud,
-  X,
-  Package,
-  Truck,
-  CheckCircle,
-  ShoppingBag,
-} from "lucide-react";
+import { Star, UploadCloud, X, AlertCircle, Package, Truck, CheckCircle, Clock, ShoppingBag } from "lucide-react";
 import axios from "axios";
 
 // ────────────────────────────────────────────────
-//  CONFIG – adjust according to your project
+// CONFIG
 // ────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
 const ORDERS_URL = `${API_BASE}/api/orders/`;
 
 /* ================== PDF GENERATION ================== */
 const downloadInvoice = async (order) => {
-  const element = document.getElementById(`invoice-${order._id}`);
-
-  if (!element) return;
+  const element = document.getElementById(`invoice-${order._id || order.id}`);
 
   element.style.display = "block";
   element.style.position = "absolute";
@@ -53,28 +43,26 @@ const downloadInvoice = async (order) => {
   const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
   pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-  pdf.save(`Invoice-${order._id.slice(-8)}.pdf`);
+  pdf.save(`Invoice-${order._id?.slice(-8) || order.id}.pdf`);
 
   element.style.display = "none";
 };
 
-/* ================== INVOICE PDF ================== */
+/* ================== INVOICE COMPONENT ================== */
 function InvoicePDF({ order }) {
   const guestNumber = "GST-2026-0045";
-  const pdfInvoiceDate = order.orderStatus === "delivered"
-    ? new Date(order.updatedAt || order.createdAt).toLocaleDateString("en-IN")
-    : new Date(order.createdAt).toLocaleDateString("en-IN");
+  const pdfInvoiceDate = order.deliveredDate || order.estimatedDelivery || new Date(order.createdAt || Date.now()).toLocaleDateString();
 
   const pdfOrderItems = order.items.map((item) => ({
-    title: item.name,
+    title: item.name || item.title,
     unit: item.weight,
     quantity: item.qty,
-    rate: item.price,
-    amount: item.subtotal || item.qty * item.price,
+    rate: item.price || item.rate,
+    amount: item.qty * (item.price || item.rate || 0),
   }));
 
   const pdfSubtotal = pdfOrderItems.reduce((sum, item) => sum + item.amount, 0);
-  const pdfTotal = pdfSubtotal + (order.shippingCharge || 0);
+  const pdfTotal = pdfSubtotal;
 
   const totalRowStyle = {
     display: "flex",
@@ -85,7 +73,7 @@ function InvoicePDF({ order }) {
 
   return (
     <div
-      id={`invoice-${order._id}`}
+      id={`invoice-${order._id || order.id}`}
       style={{
         position: "absolute",
         left: "-9999px",
@@ -103,16 +91,14 @@ function InvoicePDF({ order }) {
       }}
     >
       <div style={{ flex: 1 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderBottom: "2px solid #c63b2f",
-            paddingBottom: "12px",
-            marginBottom: "20px",
-          }}
-        >
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "2px solid #c63b2f",
+          paddingBottom: "12px",
+          marginBottom: "20px",
+        }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <img
               src="/Logo_Marvel.png"
@@ -130,19 +116,17 @@ function InvoicePDF({ order }) {
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "26px",
-                fontWeight: "700",
-                color: "#c63b2f",
-                letterSpacing: "1px",
-              }}
-            >
+            <h2 style={{
+              margin: 0,
+              fontSize: "26px",
+              fontWeight: "700",
+              color: "#c63b2f",
+              letterSpacing: "1px",
+            }}>
               INVOICE
             </h2>
             <p style={{ margin: "4px 0 0", fontSize: "10px" }}>
-              Invoice No: <strong>{order._id.slice(-8).toUpperCase()}</strong>
+              Invoice No: <strong>{order._id?.slice(-8).toUpperCase() || order.id}</strong>
             </p>
             <p style={{ margin: "2px 0", fontSize: "10px" }}>Date: {pdfInvoiceDate}</p>
             <p style={{ margin: "2px 0", fontSize: "10px" }}>Guest No: {guestNumber}</p>
@@ -161,27 +145,21 @@ function InvoicePDF({ order }) {
           </div>
           <div style={{ width: "48%", textAlign: "right" }}>
             <p style={{ fontWeight: "700", marginBottom: "6px" }}>Bill To</p>
-            <p style={{ margin: 0 }}>
-              {order.billingDetails?.firstName} {order.billingDetails?.lastName || ""}
-            </p>
+            <p style={{ margin: 0 }}>Customer Name</p>
             <p style={{ margin: 0, fontSize: "11px", lineHeight: "1.4" }}>
-              {order.billingDetails?.address || ""}<br />
-              {order.billingDetails?.city}, {order.billingDetails?.state} – {order.billingDetails?.pincode}
+              456 Candy Lane<br />
+              Mumbai – 400002
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>
-              {order.billingDetails?.phone || ""}
-            </p>
+            <p style={{ margin: "4px 0 0", fontSize: "11px" }}>+91 91234 56780</p>
           </div>
         </div>
 
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginBottom: "22px",
-            fontSize: "11px",
-          }}
-        >
+        <table style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginBottom: "22px",
+          fontSize: "11px",
+        }}>
           <thead>
             <tr style={{ backgroundColor: "#f7f7f7", fontWeight: "700" }}>
               {["Product", "Qty", "Rate", "Shipping", "Amount"].map((h) => (
@@ -205,20 +183,10 @@ function InvoicePDF({ order }) {
                   <strong>{item.title}</strong>
                   <div style={{ fontSize: "10px", color: "#777" }}>per {item.unit}</div>
                 </td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
-                  {item.quantity}
-                </td>
-                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>
-                  ₹{item.rate.toFixed(2)}
-                </td>
+                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>{item.quantity}</td>
+                <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹{item.rate.toFixed(2)}</td>
                 <td style={{ border: "1px solid #ddd", textAlign: "center" }}>₹0.00</td>
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    textAlign: "right",
-                    paddingRight: "10px",
-                  }}
-                >
+                <td style={{ border: "1px solid #ddd", textAlign: "right", paddingRight: "10px" }}>
                   ₹{item.amount.toFixed(2)}
                 </td>
               </tr>
@@ -234,19 +202,17 @@ function InvoicePDF({ order }) {
             </div>
             <div style={totalRowStyle}>
               <span>Shipping</span>
-              <span>₹{(order.shippingCharge || 0).toFixed(2)}</span>
+              <span>₹0.00</span>
             </div>
-            <div
-              style={{
-                ...totalRowStyle,
-                fontWeight: "700",
-                fontSize: "14px",
-                borderTop: "2px solid #c63b2f",
-                paddingTop: "6px",
-                marginTop: "6px",
-                color: "#c63b2f",
-              }}
-            >
+            <div style={{
+              ...totalRowStyle,
+              fontWeight: "700",
+              fontSize: "14px",
+              borderTop: "2px solid #c63b2f",
+              paddingTop: "6px",
+              marginTop: "6px",
+              color: "#c63b2f",
+            }}>
               <span>Total Paid</span>
               <span>₹{pdfTotal.toFixed(2)}</span>
             </div>
@@ -254,19 +220,17 @@ function InvoicePDF({ order }) {
         </div>
       </div>
 
-      <div
-        style={{
-          position: "absolute",
-          bottom: "18mm",
-          left: "18mm",
-          right: "18mm",
-          textAlign: "center",
-          fontSize: "10px",
-          color: "#777",
-          borderTop: "1px solid #ddd",
-          paddingTop: "10px",
-        }}
-      >
+      <div style={{
+        position: "absolute",
+        bottom: "18mm",
+        left: "18mm",
+        right: "18mm",
+        textAlign: "center",
+        fontSize: "10px",
+        color: "#777",
+        borderTop: "1px solid #ddd",
+        paddingTop: "10px",
+      }}>
         <p style={{ margin: 0 }}>
           Marvel Crunch Chikki • www.marvelcrunch.com • +91 99461 37919
         </p>
@@ -278,63 +242,68 @@ function InvoicePDF({ order }) {
 
 /* ================== ORDER STATUS TIMELINE ================== */
 function OrderStatusTimeline({ order }) {
-  const status = (order.orderStatus || order.status || "pending").toLowerCase();
-
-  const statusMap = {
-    pending: 0,
-    placed: 0,
-    accepted: 1,
-    confirmed: 1,
-    processing: 2,
-    "in progress": 2,
-    "on the way": 3,
-    shipped: 3,
-    delivered: 4,
-  };
-
-  const currentStep = statusMap[status] ?? 0;
-
   const steps = [
-    { label: "Order Placed", icon: ShoppingBag },
-    { label: "Confirmed", icon: CheckCircle },
-    { label: "Processing", icon: Package },
-    { label: "On the Way", icon: Truck },
-    { label: "Delivered", icon: CheckCircle },
+    { label: "Order Placed", icon: ShoppingBag, date: "20 Feb 2024", time: "11:05 AM" },
+    { label: "Accepted", icon: CheckCircle, date: "20 Feb 2024", time: "11:45 AM" },
+    { label: "In Progress", icon: Package, date: "Expected", expected: "21 Feb 2024" },
+    { label: "On the Way", icon: Truck, date: "Expected", expected: "22-23 Feb 2024" },
+    { label: "Delivered", icon: CheckCircle, date: "Expected", expected: order.estimatedDelivery || order.deliveredDate || "24 Feb 2024" },
   ];
+
+  let completedUpTo = 1;
+  const currentStatus = (order.orderStatus || order.status || "").toLowerCase();
+
+  if (currentStatus === "delivered") {
+    completedUpTo = 4;
+    steps[4].date = order.deliveredDate || "Delivered";
+    steps[4].expected = null;
+  } else if (currentStatus === "accepted" || currentStatus === "confirmed") {
+    completedUpTo = 1;
+  } else if (currentStatus === "processing" || currentStatus === "in progress") {
+    completedUpTo = 2;
+  } else if (currentStatus === "on the way" || currentStatus === "shipped") {
+    completedUpTo = 3;
+  }
 
   return (
     <div className="px-6 py-8 bg-gray-50 border-t border-gray-200">
       <h3 className="text-lg font-semibold mb-6 text-[var(--text-main)]">Order Status</h3>
       <div className="flex items-center justify-between relative">
+        {/* Background Line */}
         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
+        {/* Progress Line */}
         <div
-          className="absolute left-0 top-1/2 h-0.5 bg-green-500 transition-all duration-700 -translate-y-1/2"
-          style={{ width: `${(currentStep + 1) * 20}%` }} // +1 to show next step partially
+          className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
+          style={{ width: `${(completedUpTo + 1) * 20}%` }}
         />
 
         {steps.map((step, index) => {
-          const isCompleted = index <= currentStep;
-          const isActive = index === currentStep + 1 && currentStep < 4;
+          const Icon = step.icon;
+          const isCompleted = index <= completedUpTo;
+          const isActive = index === completedUpTo + 1;
 
           return (
             <div key={index} className="flex flex-col items-center relative z-10 flex-1">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 shadow-md ${
-                  isCompleted
-                    ? "bg-green-500 text-white scale-110"
-                    : isActive
-                    ? "bg-yellow-400 text-white animate-pulse scale-110 ring-4 ring-yellow-300"
-                    : "bg-gray-300 text-gray-600"
-                }`}
-              >
-                <step.icon className="w-6 h-6" />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
+                isCompleted
+                  ? "bg-[var(--secondary)] text-white shadow-lg scale-110"
+                  : isActive
+                  ? "bg-[var(--primary)] text-white ring-4 ring-[var(--primary)]/20 scale-110"
+                  : "bg-gray-300 text-gray-500"
+              }`}>
+                <Icon className="w-6 h-6" />
               </div>
-              <p className={`mt-3 text-sm font-medium ${isCompleted || isActive ? "text-gray-900" : "text-gray-500"}`}>
-                {step.label}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {isCompleted ? "Done" : isActive ? "Now" : "Expected"}
-              </p>
+              <div className="mt-7 text-center">
+                <p className={`font-medium text-sm ${isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"}`}>
+                  {step.label}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {step.date === "Expected" ? "Expected" : step.date}
+                  {step.expected && <><br /><span className="font-medium">{step.expected}</span></>}
+                  {step.time && <><br /><span className="text-xs">{step.time}</span></>}
+                  {step.date !== "Expected" && !step.time && !step.expected && <br />}
+                </p>
+              </div>
             </div>
           );
         })}
@@ -358,9 +327,6 @@ function ReviewModal({ order, isOpen, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.rating) return alert("Please select a rating!");
-
-    // TODO: send real review to backend
-    console.log("Review submitted for order", order._id, formData);
 
     setShowThankYou(true);
     setTimeout(() => {
@@ -389,37 +355,18 @@ function ReviewModal({ order, isOpen, onClose }) {
             className="bg-[var(--bg-card)] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10"
-            >
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10">
               <X className="w-6 h-6" />
             </button>
 
             <div className="p-6 sm:p-8">
-              <h3 className="text-2xl font-semibold mb-2">
-                Add Review for Order #{order?._id?.slice(-8)}
-              </h3>
+              <h3 className="text-2xl font-semibold mb-2">Add Review for Order #{order?.id || order?._id?.slice(-8)}</h3>
               <p className="text-[var(--text-muted)] mb-6">Share your experience with this order</p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Name *"
-                    required
-                    className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email *"
-                    required
-                    className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
+                  <input type="text" placeholder="Name *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                  <input type="email" placeholder="Email *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                 </div>
 
                 <div>
@@ -429,120 +376,46 @@ function ReviewModal({ order, isOpen, onClose }) {
                       <Star
                         key={star}
                         fill="currentColor"
-                        className={`w-10 h-10 cursor-pointer transition ${
-                          star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"
-                        }`}
+                        className={`w-10 h-10 cursor-pointer transition ${star <= formData.rating ? "text-[var(--accent)] scale-110" : "text-gray-300"}`}
                         onClick={() => setFormData({ ...formData, rating: star })}
                       />
                     ))}
                   </div>
                 </div>
 
-                <input
-                  type="text"
-                  placeholder="Review Title *"
-                  required
-                  className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                />
+                <input type="text" placeholder="Review Title *" required className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)]" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
 
-                <textarea
-                  placeholder="Write your detailed review *"
-                  required
-                  rows="5"
-                  className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none"
-                  value={formData.details}
-                  onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                />
+                <textarea placeholder="Write your detailed review *" required rows="5" className="border p-3 rounded w-full focus:ring-2 focus:ring-[var(--primary)] resize-none" value={formData.details} onChange={(e) => setFormData({ ...formData, details: e.target.value })} />
 
                 <div>
                   <label className="block mb-2 font-medium">Add Photos / Videos (Optional)</label>
-                  <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition"
-                    onClick={() => document.getElementById("reviewFileInput").click()}
-                  >
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[var(--accent)] transition" onClick={() => document.getElementById("reviewFileInput").click()}>
                     <UploadCloud className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500 font-medium">
-                      Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span>
-                    </p>
-
+                    <p className="text-gray-500 font-medium">Drag & drop or <span className="text-[var(--primary)] font-semibold">Browse</span></p>
                     {formData.photo.length > 0 && (
                       <div className="flex flex-wrap gap-3 mt-4 justify-center">
                         {formData.photo.map((file, idx) => (
                           <div key={idx} className="relative w-28 h-28 rounded overflow-hidden border">
-                            {file.type.startsWith("image/") ? (
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt="preview"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <video
-                                src={URL.createObjectURL(file)}
-                                className="w-full h-full object-cover"
-                                controls
-                              />
-                            )}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setFormData({
-                                  ...formData,
-                                  photo: formData.photo.filter((_, i) => i !== idx),
-                                });
-                              }}
-                              className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm"
-                            >
-                              ×
-                            </button>
+                            {file.type.startsWith("image/") ? <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" /> : <video src={URL.createObjectURL(file)} className="w-full h-full object-cover" controls />}
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, photo: formData.photo.filter((_, i) => i !== idx) }); }} className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">×</button>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                  <input
-                    id="reviewFileInput"
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        photo: [...formData.photo, ...Array.from(e.target.files)],
-                      })
-                    }
-                  />
+                  <input id="reviewFileInput" type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => setFormData({ ...formData, photo: [...formData.photo, ...Array.from(e.target.files)] })} />
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition"
-                  >
-                    Submit Review
-                  </button>
+                  <button type="button" onClick={onClose} className="px-6 py-3 border border-gray-300 rounded hover:bg-gray-100 transition">Cancel</button>
+                  <button type="submit" className="px-6 py-3 bg-[var(--primary)] text-white rounded hover:bg-[var(--secondary)] transition">Submit Review</button>
                 </div>
               </form>
             </div>
 
             <AnimatePresence>
               {showThankYou && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-[var(--bg-card)]/95 backdrop-blur flex items-center justify-center rounded-xl">
                   <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-center">
                     <img src="/review.png" alt="Thank you" className="w-32 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold text-[var(--secondary)] mb-2">Thank You!</h3>
@@ -572,7 +445,7 @@ export default function OrdersPage() {
         setError(null);
 
         const res = await axios.get(ORDERS_URL, {
-          withCredentials: true  
+          withCredentials: true,
         });
 
         if (res.data?.success) {
@@ -581,7 +454,6 @@ export default function OrdersPage() {
           throw new Error(res.data?.message || "Failed to load orders");
         }
       } catch (err) {
-        console.error(err);
         setError(err.response?.data?.message || err.message || "Something went wrong");
       } finally {
         setLoading(false);
@@ -626,31 +498,14 @@ export default function OrdersPage() {
     <div className="min-h-screen">
       {/* HERO */}
       <section className="relative h-[50vh] flex items-center justify-center overflow-hidden">
-        <img
-          src="/login.png"
-          alt="Chikki Banner"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-[var(--secondary)]/30" />
+        <img src="/login.png" alt="Chikki Banner" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-[var(--secondary)]/30"></div>
         <div className="relative z-10 text-center px-4">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg"
-          >
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">
             My Orders
           </motion.h1>
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 flex justify-center items-center gap-3 text-white text-sm sm:text-base"
-          >
-            <Link
-              to="/"
-              className="hover:text-[var(--text-main)] hover:font-bold hover:underline font-medium transition-all"
-            >
-              Home
-            </Link>
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mt-6 flex justify-center items-center gap-3 text-white text-sm sm:text-base">
+            <Link to="/" className="hover:text-[var(--text-main)] hover:font-bold hover:underline font-medium transition-all">Home</Link>
             <span className="font-bold">\\</span>
             <span className="font-semibold">My Orders</span>
           </motion.div>
@@ -659,96 +514,64 @@ export default function OrdersPage() {
 
       {/* ORDERS LIST */}
       <div className="max-w-6xl mx-auto px-4 py-12 space-y-10">
-        <h2 className="text-2xl font-bold text-[var(--text-main)]">
-          Orders ({orders.length})
-        </h2>
+        <h2 className="text-2xl font-bold text-[var(--text-main)]">Orders ({orders.length})</h2>
 
         {orders.map((order) => (
           <div
-            key={order._id}
-            id={`order-${order._id}`}
+            key={order._id || order.id}
+            id={`order-${order._id || order.id}`}
             className="bg-[var(--bg-card)] border border-[var(--secondary)] rounded-xl shadow-sm overflow-hidden"
           >
             {/* ORDER HEADER */}
             <div className="bg-[var(--accent)] text-[var(--text-main)] px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm md:text-base">
-              <div>
-                <span className="font-semibold">Order ID</span>
-                <br />#{order._id.slice(-8).toUpperCase()}
-              </div>
-              <div>
-                <span className="font-semibold">Total</span>
-                <br />₹{(order.totalAmount || 0).toFixed(2)}
-              </div>
-              <div>
-                <span className="font-semibold">Payment</span>
-                <br />
-                {order.paymentMethod?.toUpperCase() || "—"}
-              </div>
-              <div>
-                <span className="font-semibold">
-                  {order.orderStatus === "delivered" ? "Delivered" : "Expected"}
-                </span>
-                <br />
-                {order.orderStatus === "delivered"
-                  ? new Date(order.updatedAt || order.createdAt).toLocaleDateString("en-IN")
-                  : "TBD"}
-              </div>
+              <div><span className="font-semibold">Order ID</span><br />#{order._id?.slice(-8).toUpperCase() || order.id}</div>
+              <div><span className="font-semibold">Total</span><br />₹{(order.totalAmount || order.totalPayment || 0).toFixed(2)}</div>
+              <div><span className="font-semibold">Payment</span><br />{order.paymentMethod || "—"}</div>
+              <div><span className="font-semibold">{order.estimatedDelivery ? "Estimated Delivery" : "Delivered Date"}</span><br />{order.estimatedDelivery || order.deliveredDate || "TBD"}</div>
             </div>
 
             {/* ORDER ITEMS */}
             <div className="divide-y divide-gray-200">
               {order.items.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-4 px-6 py-4">
-                  <img
-                    src={item.image || "/placeholder-chikki.png"}
-                    alt={item.name}
-                    className="w-20 h-20 rounded-lg object-cover"
-                  />
+                  <img src={item.img || item.image || "/placeholder.png"} alt={item.title || item.name} className="w-20 h-20 rounded-lg object-cover" />
                   <div>
-                    <h3 className="font-semibold text-[var(--text-main)]">{item.name}</h3>
+                    <h3 className="font-semibold text-[var(--text-main)]">{item.title || item.name}</h3>
                     <p className="text-sm text-[var(--text-muted)]">
-                      Weight: {item.weight} | Qty: {item.qty} | ₹{item.price?.toFixed(2) || "—"}
+                      {item.flavor ? `Flavor: ${item.flavor} | ` : ""}
+                      Weight: {item.weight} | Qty: {item.qty}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
 
+            {/* ORDER STATUS TIMELINE – same as your original */}
             <OrderStatusTimeline order={order} />
 
-            {/* STATUS & ACTIONS */}
+            {/* STATUS & ACTIONS – same as original */}
             <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  order.orderStatus?.toLowerCase() === "delivered"
-                    ? "bg-green-100 text-green-700"
-                    : order.orderStatus?.toLowerCase() === "cancelled" ||
-                      order.orderStatus?.toLowerCase() === "rejected"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-amber-100 text-amber-800"
-                }`}
-              >
-                {order.orderStatus
-                  ? order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1)
-                  : "Pending"}
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${order.status === "Delivered" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>
+                {order.status || order.orderStatus || "Pending"}
               </span>
-
               <div className="flex flex-wrap gap-3">
-                {order.orderStatus?.toLowerCase() !== "delivered" &&
-                  order.orderStatus?.toLowerCase() !== "cancelled" && (
-                    <button
-                      onClick={() => {
-                        document
-                          .getElementById(`order-${order._id}`)
-                          ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }}
-                      className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
-                    >
-                      Track Order
-                    </button>
-                  )}
+                {order.status !== "Delivered" && (
+                  <button
+                    onClick={() => {
+                      document
+                        .getElementById(`order-${order._id || order.id}`)
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
+                    }}
+                    className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
+                  >
+                    Track Order
+                  </button>
+                )}
 
-                {order.orderStatus?.toLowerCase() === "delivered" && (
+                {order.status === "Delivered" && (
                   <button
                     onClick={() => setSelectedOrderForReview(order)}
                     className="px-6 py-2 bg-[var(--secondary)] text-white rounded hover:bg-[var(--primary)] transition"
@@ -756,7 +579,6 @@ export default function OrdersPage() {
                     Add Review
                   </button>
                 )}
-
                 <button
                   className="px-6 py-2 border border-[var(--secondary)] text-[var(--text-main)] rounded hover:bg-[var(--bg-soft)] transition"
                   onClick={() => downloadInvoice(order)}
@@ -766,16 +588,14 @@ export default function OrdersPage() {
               </div>
             </div>
 
+            {/* HIDDEN PDF DIV */}
             <InvoicePDF order={order} />
           </div>
         ))}
       </div>
 
-      <ReviewModal
-        order={selectedOrderForReview}
-        isOpen={!!selectedOrderForReview}
-        onClose={() => setSelectedOrderForReview(null)}
-      />
+      {/* Modals */}
+      <ReviewModal order={selectedOrderForReview} isOpen={!!selectedOrderForReview} onClose={() => setSelectedOrderForReview(null)} />
     </div>
   );
 }

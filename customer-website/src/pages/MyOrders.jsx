@@ -277,38 +277,66 @@ function InvoicePDF({ order }) {
 
 /* ================== ORDER STATUS TIMELINE ================== */
 function OrderStatusTimeline({ order }) {
-  const currentStatus = (order.orderStatus || order.status || "pending").toLowerCase().trim();
+  const rawStatus = (order.orderStatus || order.status || "pending")
+    .toLowerCase()
+    .trim();
 
-  const statusOrder = ["placed", "accepted", "processing", "on the way", "delivered"];
-  
+  // Normalize backend statuses (UI SAME rahegi)
+  const normalizedStatus = rawStatus === "shipped" ? "on the way" : rawStatus;
+
+  // Step order (UI labels se match)
+  const steps = [
+    { key: "placed", label: "Order Placed", icon: ShoppingBag },
+    { key: "accepted", label: "Accepted", icon: CheckCircle },
+    { key: "processing", label: "In Progress", icon: Package },
+    { key: "on the way", label: "On the Way", icon: Truck },
+    { key: "delivered", label: "Delivered", icon: CheckCircle },
+  ];
+
+  // Backend status → step index
   const getStepIndex = () => {
-    if (currentStatus.includes("delivered")) return 4;
-    if (currentStatus.includes("on the way") || currentStatus === "shipped") return 3;
-    if (currentStatus === "processing" || currentStatus === "in progress") return 2;
-    if (currentStatus === "accepted" || currentStatus === "confirmed") return 1;
-    return 0; // placed / pending / default
+    if (normalizedStatus === "delivered") return 4;
+    if (normalizedStatus === "on the way") return 3;
+    if (normalizedStatus === "processing") return 2;
+    if (normalizedStatus === "accepted") return 1;
+    return 0; // pending / placed
   };
 
   const activeIndex = getStepIndex();
 
-  const steps = [
-    { label: "Order Placed", icon: ShoppingBag },
-    { label: "Accepted", icon: CheckCircle },
-    { label: "In Progress", icon: Package },
-    { label: "On the Way", icon: Truck },
-    { label: "Delivered", icon: CheckCircle },
-  ];
+  // Get real date from statusHistory
+  const getStatusDate = (statusKey) => {
+    const history = order.statusHistory || [];
+    const entry = history
+      .slice()
+      .reverse()
+      .find((h) => h.status === statusKey);
+
+    if (!entry) return null;
+
+    return new Date(entry.updatedAt).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   return (
     <div className="px-6 py-8 bg-gray-50 border-t border-gray-200">
-      <h3 className="text-lg font-semibold mb-6 text-[var(--text-main)]">Order Status</h3>
+      <h3 className="text-lg font-semibold mb-6 text-[var(--text-main)]">
+        Order Status
+      </h3>
+
       <div className="flex items-center justify-between relative">
         {/* Background Line */}
         <div className="absolute left-0 top-1/2 w-full h-0.5 bg-gray-300 -translate-y-1/2" />
+
         {/* Progress Line */}
         <div
           className="absolute left-0 top-1/2 h-0.5 bg-[var(--secondary)] transition-all duration-700 -translate-y-1/2"
-          style={{ width: `${(activeIndex / (steps.length - 1)) * 100}%` }}
+          style={{
+            width: `${(activeIndex / (steps.length - 1)) * 100}%`,
+          }}
         />
 
         {steps.map((step, index) => {
@@ -316,17 +344,18 @@ function OrderStatusTimeline({ order }) {
           const isCompleted = index <= activeIndex;
           const isActive = index === activeIndex;
 
-          // You can later improve this with real dates from statusHistory
-          const dateText = isCompleted
-            ? index === 0
-              ? "Done"
-              : index === steps.length - 1
-              ? order.deliveredDate || "Delivered"
-              : "Completed"
-            : "Expected soon";
+          const dateText =
+            isCompleted && getStatusDate(step.key)
+              ? getStatusDate(step.key)
+              : isCompleted
+              ? "Completed"
+              : "Expected soon";
 
           return (
-            <div key={index} className="flex flex-col items-center relative z-10 flex-1">
+            <div
+              key={step.key}
+              className="flex flex-col items-center relative z-10 flex-1"
+            >
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${
                   isCompleted
@@ -338,22 +367,31 @@ function OrderStatusTimeline({ order }) {
               >
                 <Icon className="w-6 h-6" />
               </div>
+
               <div className="mt-7 text-center">
                 <p
                   className={`font-medium text-sm ${
-                    isCompleted || isActive ? "text-[var(--text-main)]" : "text-gray-500"
+                    isCompleted || isActive
+                      ? "text-[var(--text-main)]"
+                      : "text-gray-500"
                   }`}
                 >
                   {step.label}
                 </p>
+
                 <p className="text-xs text-gray-600 mt-1">
                   {dateText}
-                  {index === steps.length - 1 && order.estimatedDelivery && !order.deliveredDate && (
-                    <>
-                      <br />
-                      <span className="font-medium">Est: {order.estimatedDelivery}</span>
-                    </>
-                  )}
+
+                  {step.key === "delivered" &&
+                    !order.deliveredDate &&
+                    order.estimatedDelivery && (
+                      <>
+                        <br />
+                        <span className="font-medium">
+                          Est: {order.estimatedDelivery}
+                        </span>
+                      </>
+                    )}
                 </p>
               </div>
             </div>

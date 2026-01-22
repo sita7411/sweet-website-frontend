@@ -581,9 +581,6 @@ export default function OrdersPage() {
         setLoading(true);
         setError(null);
 
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Please login to view orders");
-
         const res = await axios.get(ORDERS_URL, {
           withCredentials: true  
         });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ToastContainer, toast, Slide } from "react-toastify";
 import {
   StarIcon as OutlineStar,
@@ -10,38 +10,36 @@ import { StarIcon as SolidStar } from "@heroicons/react/24/solid";
 import "react-toastify/dist/ReactToastify.css";
 import clsx from "clsx";
 
-const allProducts = [
-  { id: 1, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #10 – White", price: "$1.35", popular: false, rating: 4.5 },
-  { id: 2, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #10 – Black", price: "$1.35", popular: false, rating: 4.0 },
-  { id: 3, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #19 – White", price: "$1.35", popular: false, rating: 3.5 },
-  { id: 4, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #20 – Blue", price: "$1.50", popular: false, rating: 5.0 },
-  { id: 5, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #21 – Red", price: "$1.60", popular: false, rating: 4.2 },
-  { id: 6, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #22 – Green", price: "$1.70", popular: false, rating: 3.8 },
-  { id: 7, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #23 – Yellow", price: "$1.80", popular: false, rating: 4.7 },
-];
-
-
-// Rating Component
+// ──────────────────────────────────────────────
+// Safe Rating Component
 const RatingStars = ({ rating }) => {
-  const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+  const num = Number(rating);
+  const isValid = !isNaN(num) && num >= 0 && num <= 5;
+  const value = isValid ? num : null;
+
+  const fullStars = value ? Math.floor(value) : 0;
+  const hasHalf = value ? value % 1 >= 0.5 : false;
+  const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
 
   return (
     <div className="flex items-center gap-0.5 mt-1">
       {Array.from({ length: fullStars }).map((_, i) => (
         <SolidStar key={i} className="w-4 h-4 text-yellow-500" />
       ))}
-      {halfStar && <OutlineStar key="half" className="w-4 h-4 text-yellow-500" />}
+      {hasHalf && (
+        <OutlineStar key="half" className="w-4 h-4 text-yellow-500" />
+      )}
       {Array.from({ length: emptyStars }).map((_, i) => (
         <OutlineStar key={`empty-${i}`} className="w-4 h-4 text-yellow-300" />
       ))}
-      <span className="text-xs text-[#8a6a52] ml-1">{rating.toFixed(1)}</span>
+      <span className="text-xs text-[#8a6a52] ml-1">
+        {value !== null ? value.toFixed(1) : "—"}
+      </span>
     </div>
   );
 };
 
-// Reusable Button
+// Reusable Popular Button
 const PopularButton = ({ isPopular, onClick }) => (
   <button
     onClick={onClick}
@@ -49,7 +47,7 @@ const PopularButton = ({ isPopular, onClick }) => (
       "inline-flex items-center gap-1 px-4 py-1 rounded-full font-semibold transition-shadow duration-200",
       isPopular
         ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-md hover:shadow-lg"
-        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+        : "bg-gray-200 text-gray-700 hover:bg-gray-300",
     )}
   >
     <SolidStar className="w-4 h-4" />
@@ -62,7 +60,7 @@ const ProductRow = ({ product, onToggle }) => (
   <tr className="border-t hover:bg-[#fff6ec] transition-all">
     <td className="p-3 flex items-center gap-3">
       <img
-        src={product.img}
+        src={product.images?.[0] || "https://via.placeholder.com/80"}
         alt={product.name}
         className="w-12 h-12 rounded-lg border object-cover"
       />
@@ -71,9 +69,14 @@ const ProductRow = ({ product, onToggle }) => (
         <RatingStars rating={product.rating} />
       </div>
     </td>
-    <td className="p-3 text-center font-semibold">{product.price}</td>
+    <td className="p-3 text-center font-semibold">
+      ₹{(product.weights?.[0]?.sellingPrice || 0).toFixed(2)}
+    </td>
     <td className="p-3 text-center">
-      <PopularButton isPopular={product.popular} onClick={() => onToggle(product.id)} />
+      <PopularButton
+        isPopular={product.popular}
+        onClick={() => onToggle(product._id || product.id)}
+      />
     </td>
   </tr>
 );
@@ -83,65 +86,153 @@ const ProductCard = ({ product, onToggle }) => (
   <div className="p-4 bg-white shadow-lg rounded-xl mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center w-full transition hover:shadow-xl">
     <div className="flex items-center gap-3 w-full sm:w-auto">
       <img
-        src={product.img}
+        src={product.images?.[0] || "https://via.placeholder.com/80"}
         alt={product.name}
         className="w-14 h-14 rounded-lg border object-cover"
       />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{product.name}</p>
-        <p className="text-xs text-[#8a6a52]">{product.price}</p>
+        <p className="text-xs text-[#8a6a52]">
+          ₹{(product.weights?.[0]?.sellingPrice || 0).toFixed(2)}
+        </p>
         <RatingStars rating={product.rating} />
       </div>
     </div>
     <div className="mt-3 sm:mt-0 sm:ml-3 flex-shrink-0">
-      <PopularButton isPopular={product.popular} onClick={() => onToggle(product.id)} />
+      <PopularButton
+        isPopular={product.popular}
+        onClick={() => onToggle(product._id || product.id)}
+      />
     </div>
   </div>
 );
 
 export default function PopularProductsPage() {
-  const [products, setProducts] = useState(allProducts);
+  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const itemsPerPage = 5;
 
+  // Fetch real products from backend
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          "https://sweet-backend-nhwt.onrender.com/api/products",
+        );
+        if (!response.ok) throw new Error("Failed to fetch products");
+        const data = await response.json();
+
+        const productList = Array.isArray(data) ? data : data.data || [];
+
+        const normalized = productList.map((p) => ({
+          ...p,
+          id: p._id || p.id,
+        }));
+
+        setProducts(normalized);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const popularCount = products.filter((p) => p.popular).length;
 
-  const handleTogglePopular = (id) => {
+  const handleTogglePopular = async (id) => {
+    const target = products.find((p) => (p._id || p.id) === id);
+    if (!target) return;
+
+    // Client-side limit check
+    if (!target.popular && popularCount >= 4) {
+      toast.error("You can only select 4 popular products!");
+      return;
+    }
+
+    // Save previous state for rollback
+    const previousProducts = [...products];
+
+    // Optimistic update
     setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          if (!p.popular && popularCount >= 4) {
-            toast.error("You can only select 4 popular products!");
-            return p;
-          }
-          toast.success(!p.popular ? "Added to popular products" : "Removed from popular products");
-          return { ...p, popular: !p.popular };
-        }
-        return p;
-      })
+      prev.map((p) =>
+        (p._id || p.id) === id ? { ...p, popular: !p.popular } : p,
+      ),
     );
+
+    try {
+      const response = await fetch(
+        `https://sweet-backend-nhwt.onrender.com/api/products/${id}/popular`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        },
+      );
+
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || "Something went wrong");
+      }
+
+      setProducts((prev) =>
+        prev.map((p) =>
+          (p._id || p.id) === id ? { ...p, ...data.product } : p,
+        ),
+      );
+      toast.success(data.message || "Updated successfully");
+    } catch (error) {
+      console.error("Toggle popular error:", error);
+
+      toast.error(error?.message || "Failed to update popular");
+
+      setProducts(previousProducts);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-[#8a6a52]">
+        Loading products...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] px-4 md:px-10 py-6 text-[#3a2416] space-y-6">
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Popular Products</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Popular Products
+          </h1>
           <p className="text-sm text-[#8a6a52] mt-1">
-            Select up to 4 products to feature as popular.
+            Select up to 4 products to feature as popular ({popularCount}/4
+            selected)
           </p>
         </div>
       </div>
@@ -173,7 +264,11 @@ export default function PopularProductsPage() {
           </thead>
           <tbody>
             {paginatedProducts.map((p) => (
-              <ProductRow key={p.id} product={p} onToggle={handleTogglePopular} />
+              <ProductRow
+                key={p._id || p.id}
+                product={p}
+                onToggle={handleTogglePopular}
+              />
             ))}
           </tbody>
         </table>
@@ -197,7 +292,7 @@ export default function PopularProductsPage() {
                   "px-2 sm:px-3 py-1 rounded-lg border transition",
                   page === currentPage
                     ? "bg-[#c63b2f] text-white font-semibold"
-                    : "bg-white hover:bg-[#fff1db]"
+                    : "bg-white hover:bg-[#fff1db]",
                 )}
               >
                 {page}
@@ -205,7 +300,9 @@ export default function PopularProductsPage() {
             ))}
 
             <button
-              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage(Math.min(currentPage + 1, totalPages))
+              }
               disabled={currentPage === totalPages}
               className="p-2 rounded-lg border bg-white hover:bg-[#fff1db] disabled:opacity-50 transition"
             >
@@ -218,7 +315,11 @@ export default function PopularProductsPage() {
       {/* Mobile Cards */}
       <div className="md:hidden mt-4">
         {paginatedProducts.map((p) => (
-          <ProductCard key={p.id} product={p} onToggle={handleTogglePopular} />
+          <ProductCard
+            key={p._id || p.id}
+            product={p}
+            onToggle={handleTogglePopular}
+          />
         ))}
 
         {/* Mobile Pagination */}
@@ -240,7 +341,7 @@ export default function PopularProductsPage() {
                   "px-2 sm:px-3 py-1 rounded-lg border transition",
                   page === currentPage
                     ? "bg-[#c63b2f] text-white font-semibold"
-                    : "bg-white hover:bg-[#fff1db]"
+                    : "bg-white hover:bg-[#fff1db]",
                 )}
               >
                 {page}
@@ -248,7 +349,9 @@ export default function PopularProductsPage() {
             ))}
 
             <button
-              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage(Math.min(currentPage + 1, totalPages))
+              }
               disabled={currentPage === totalPages}
               className="p-2 rounded-lg border bg-white hover:bg-[#fff1db] disabled:opacity-50 transition"
             >

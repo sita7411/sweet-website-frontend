@@ -46,13 +46,15 @@ export default function CheckoutPage() {
     upi: "",
   });
 
+  // अब सिर्फ cart fetch करेंगे, pre-fill नहीं
   useEffect(() => {
     const init = async () => {
       try {
         await fetchCart();
+        // कोई pre-fill नहीं होगा
         setForm((prev) => ({
           ...prev,
-          country: "India",
+          country: "India", // सिर्फ country default रखा
         }));
       } catch (err) {
         console.error("Checkout init error:", err);
@@ -89,91 +91,55 @@ export default function CheckoutPage() {
   const upiRegex = /^[\w.-]+@[\w.-]+$/;
 
   const handleOrder = async () => {
-    if (loading) return;
-    setLoading(true);
+  setLoading(true);
+  try {
+    const payload = {
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      country: form.country.trim(),
+      address: form.address.trim(),
+      city: form.city.trim(),
+      state: form.state.trim(),
+      pincode: form.pincode.trim(),
+      paymentMethod: payment,
+      ...(payment === "gpay" && { upiId: form.upi?.trim() }),
+    };
 
-    try {
-      const payload = {
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        country: form.country.trim(),
-        address: form.address.trim(),
-        city: form.city.trim(),
-        state: form.state.trim(),
-        pincode: form.pincode.trim(),
-        paymentMethod: payment,
-        ...(payment === "gpay" && { upiId: form.upi?.trim() }),
-      };
+    const res = await axios.post(`${API_BASE}/api/orders`, payload, {
+      withCredentials: true,
+      headers: { "Content-Type": "application/json" },
+    });
 
-      console.log("[ORDER SUBMIT] Sending payload:", payload);
+    if (res.data?.success) {
+      toast.success("Order placed successfully!");
 
-      const res = await axios.post(`${API_BASE}/api/orders`, payload, {
-        withCredentials: true,
-        headers: { "Content-Type": "application/json" },
-      });
+      // Improved orderId extraction + debug
+      const orderId = res.data.orderId || res.data._id || res.data.id;
+      console.log("[DEBUG] Server response for orderId:", res.data); // ← yeh log zaroor check karna
+      console.log("[DEBUG] Extracted orderId:", orderId);
 
-      console.log("[ORDER SUBMIT] Server response:", res.data);
-
-      if (res.data?.success) {
-        toast.success("Order placed successfully!");
-
-        const orderId =
-          res.data.orderId ||
-          res.data._id ||
-          res.data.id ||
-          (res.data.data?._id) ||
-          (res.data.order?._id);
-
-        console.log("[ORDER SUBMIT] Extracted orderId:", orderId);
-
-        if (!orderId) {
-          toast.error("Order created but ID missing from server");
-          console.error("No orderId in response:", res.data);
-          return;
-        }
-
-        try {
-          await clearCart();
-          console.log("[ORDER SUBMIT] Cart cleared successfully");
-        } catch (clearErr) {
-          console.warn("[ORDER SUBMIT] Failed to clear cart (order still placed)", clearErr);
-          // Optional: toast.warn("Order placed, but cart may not have cleared");
-        }
-
-        setIsRedirecting(true);
-        navigate(`/ordercomplete?orderId=${orderId}`);
-      } else {
-        const msg = res.data?.message || "Failed to place order";
-        console.warn("[ORDER SUBMIT] Server rejected:", msg);
-        toast.error(msg);
-      }
-    } catch (err) {
-      console.error("Order placement failed:", {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.response?.data?.message || err.message,
-      });
-
-      let errorMsg = "Something went wrong";
-      if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMsg = "Session expired – please log in again";
-      } else if (err.response?.status === 400) {
-        errorMsg = "Invalid order details";
+      if (!orderId) {
+        toast.error("Order created but ID missing from server");
+        console.error("No orderId in response:", res.data);
+        return;
       }
 
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
+      clearCart();
+      setIsRedirecting(true);
+      navigate(`/ordercomplete?orderId=${orderId}`);
+    } else {
+      toast.error(res.data?.message || "Failed to place order");
     }
-  };
-
+  } catch (err) {
+    console.error("Order placement failed:", err);
+    toast.error(err.response?.data?.message || "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
   const handlePlaceOrderClick = () => {
-    if (loading) return;
-
     console.log("[DEBUG] Place Order clicked");
     console.log("[DEBUG] cartItems length:", cartItems.length);
     console.log("[DEBUG] form state:", form);
@@ -184,6 +150,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Required fields check
     const required = {
       firstName: "First name",
       lastName: "Last name",
@@ -214,6 +181,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Payment method specific validation
     if (payment === "card") {
       if (!form.cardName?.trim()) {
         toast.error("Cardholder name is required");
@@ -407,7 +375,7 @@ export default function CheckoutPage() {
   );
 }
 
-/* ───────────── Sub-components (unchanged) ───────────── */
+/* ───────────── Sub-components  ───────────── */
 
 function Input({ label, required, value, onChange, ...rest }) {
   return (

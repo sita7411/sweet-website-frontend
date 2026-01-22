@@ -30,7 +30,7 @@ const OtpVerificationModal = ({
     }
   }, [isOpen]);
 
-  // Auto-send OTP when modal first opens (only once)
+  // Auto-send OTP when modal
   useEffect(() => {
     if (isOpen && !otpSent) {
       sendOtp(false);
@@ -82,7 +82,6 @@ const OtpVerificationModal = ({
       setCountdown(60);
       setOtp("");
 
-      // Focus first input after short delay
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 300);
@@ -120,7 +119,7 @@ const OtpVerificationModal = ({
 
       if (res.data?.success) {
         toast.success("Email verified successfully!");
-        onVerified(); // This should trigger order placement
+        onVerified(); 
         onClose();
       } else {
         toast.error(res.data?.message || "Invalid or expired OTP");

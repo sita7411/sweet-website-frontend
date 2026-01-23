@@ -113,7 +113,7 @@ export default function AddProduct() {
       const response = await axios.post(`${API_BASE}/api/products`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${adminToken}`, // ← fixed: use adminToken
+          Authorization: `Bearer ${adminToken}`, 
         },
       });
 

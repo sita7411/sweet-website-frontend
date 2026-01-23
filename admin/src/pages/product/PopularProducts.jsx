@@ -11,7 +11,7 @@ import "react-toastify/dist/ReactToastify.css";
 import clsx from "clsx";
 
 // ──────────────────────────────────────────────
-// Safe Rating Component
+// Safe Rating Component (unchanged)
 const RatingStars = ({ rating }) => {
   const num = Number(rating);
   const isValid = !isNaN(num) && num >= 0 && num <= 5;
@@ -39,7 +39,7 @@ const RatingStars = ({ rating }) => {
   );
 };
 
-// Reusable Popular Button
+// Reusable Popular Button (unchanged)
 const PopularButton = ({ isPopular, onClick }) => (
   <button
     onClick={onClick}
@@ -55,7 +55,7 @@ const PopularButton = ({ isPopular, onClick }) => (
   </button>
 );
 
-// Desktop Table Row
+// Desktop Table Row (unchanged)
 const ProductRow = ({ product, onToggle }) => (
   <tr className="border-t hover:bg-[#fff6ec] transition-all">
     <td className="p-3 flex items-center gap-3">
@@ -75,13 +75,13 @@ const ProductRow = ({ product, onToggle }) => (
     <td className="p-3 text-center">
       <PopularButton
         isPopular={product.popular}
-        onClick={() => onToggle(product._id || product.id)}
+        onClick={() => onToggle(product._id)}
       />
     </td>
   </tr>
 );
 
-// Mobile Card
+// Mobile Card (unchanged)
 const ProductCard = ({ product, onToggle }) => (
   <div className="p-4 bg-white shadow-lg rounded-xl mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center w-full transition hover:shadow-xl">
     <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -101,7 +101,7 @@ const ProductCard = ({ product, onToggle }) => (
     <div className="mt-3 sm:mt-0 sm:ml-3 flex-shrink-0">
       <PopularButton
         isPopular={product.popular}
-        onClick={() => onToggle(product._id || product.id)}
+        onClick={() => onToggle(product._id)}
       />
     </div>
   </div>
@@ -114,35 +114,70 @@ export default function PopularProductsPage() {
   const [loading, setLoading] = useState(true);
   const itemsPerPage = 5;
 
-  // Fetch real products from backend
+  const adminToken = localStorage.getItem("adminToken");
+
   useEffect(() => {
+    if (!adminToken) {
+      toast.error("Admin login required");
+      // Optionally: redirect to /admin/login
+      return;
+    }
+
     const fetchProducts = async () => {
       try {
         setLoading(true);
+
         const response = await fetch(
           "https://sweet-backend-nhwt.onrender.com/api/products",
+          {
+            headers: {
+              Authorization: `Bearer ${adminToken}`,
+            },
+          },
         );
-        if (!response.ok) throw new Error("Failed to fetch products");
-        const data = await response.json();
 
-        const productList = Array.isArray(data) ? data : data.data || [];
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            toast.error("Session expired or unauthorized. Please login again.");
+            localStorage.removeItem("adminToken");
+            // window.location.href = "/admin/login";  ← optional redirect
+            return;
+          }
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.message || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // Handle both possible shapes safely
+        let productList = [];
+
+        if (Array.isArray(result)) {
+          // old / direct array (unlikely now)
+          productList = result;
+        } else if (result && Array.isArray(result.data)) {
+          // current shape { data: [], pagination: {} }
+          productList = result.data;
+        } else {
+          console.warn("Unexpected products response shape:", result);
+          toast.warn("Unexpected response format from server");
+        }
 
         const normalized = productList.map((p) => ({
           ...p,
-          id: p._id || p.id,
+          id: p._id, 
         }));
 
         setProducts(normalized);
       } catch (err) {
-        console.error(err);
-        toast.error("Failed to load products");
+        console.error("Fetch products failed:", err);
+        toast.error(err.message || "Failed to load products");
       } finally {
         setLoading(false);
       }
     };
-
     fetchProducts();
-  }, []);
+  }, [adminToken]);
 
   const filteredProducts = products.filter((p) =>
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -157,7 +192,12 @@ export default function PopularProductsPage() {
   const popularCount = products.filter((p) => p.popular).length;
 
   const handleTogglePopular = async (id) => {
-    const target = products.find((p) => (p._id || p.id) === id);
+    if (!adminToken) {
+      toast.error("Admin authentication required");
+      return;
+    }
+
+    const target = products.find((p) => p._id === id);
     if (!target) return;
 
     if (!target.popular && popularCount >= 4) {
@@ -167,11 +207,9 @@ export default function PopularProductsPage() {
 
     const previousProducts = [...products];
 
-    // Optimistic update
+    // Optimistic UI update
     setProducts((prev) =>
-      prev.map((p) =>
-        (p._id || p.id) === id ? { ...p, popular: !p.popular } : p,
-      ),
+      prev.map((p) => (p._id === id ? { ...p, popular: !p.popular } : p)),
     );
 
     try {
@@ -181,33 +219,29 @@ export default function PopularProductsPage() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
           },
-          credentials: "include",
+          // NO credentials: "include" → we use Bearer token
         },
       );
 
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.message || "Something went wrong");
+        throw new Error(data.message || "Failed to update popular status");
       }
 
+      // Update with fresh data from server
       setProducts((prev) =>
-        prev.map((p) =>
-          (p._id || p.id) === id ? { ...p, ...data.product } : p,
-        ),
+        prev.map((p) => (p._id === id ? { ...p, ...data.product } : p)),
       );
-      toast.success(data.message || "Updated successfully");
+
+      toast.success(data.message || "Popular status updated");
     } catch (error) {
-      console.error("Toggle popular error:", error);
+      console.error("Toggle error:", error);
+      toast.error(error.message || "Failed to update");
 
-      toast.error(error?.message || "Failed to update popular");
-
+      // Rollback optimistic update
       setProducts(previousProducts);
     }
   };
@@ -216,6 +250,14 @@ export default function PopularProductsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center text-[#8a6a52]">
         Loading products...
+      </div>
+    );
+  }
+
+  if (!adminToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600">
+        Please login as admin to manage popular products.
       </div>
     );
   }

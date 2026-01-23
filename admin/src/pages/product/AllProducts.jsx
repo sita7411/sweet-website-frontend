@@ -278,21 +278,24 @@ export default function AllproductPage() {
     }
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
+  const handleToggleStatus = async (id) => {
     try {
-      const fd = new FormData();
-      fd.append("status", !currentStatus);
-      const res = await fetch(`${API_BASE}${id}`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${adminToken}` },
-        body: fd,
+      const res = await fetch(`${API_BASE}${id}/status`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
       });
+
       if (!res.ok) throw new Error("Status update failed");
+
       const { product } = await res.json();
+
       setProducts((prev) =>
         prev.map((p) => (p._id === id ? { ...p, status: product.status } : p)),
       );
-      toast.info(`Product ${product.status ? "activated" : "deactivated"}`);
+
+      toast.success(`Product ${product.status ? "Activated" : "Deactivated"}`);
     } catch (err) {
       toast.error(err.message);
     }

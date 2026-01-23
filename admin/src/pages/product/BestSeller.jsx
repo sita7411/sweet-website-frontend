@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ToastContainer, toast, Slide } from "react-toastify";
 import {
   StarIcon as OutlineStar,
@@ -10,47 +10,43 @@ import { StarIcon as SolidStar } from "@heroicons/react/24/solid";
 import "react-toastify/dist/ReactToastify.css";
 import clsx from "clsx";
 
-const allProducts = [
-  { id: 1, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #10 – White", price: "$1.35", bestSeller: false, rating: 4.5 },
-  { id: 2, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #10 – Black", price: "$1.35", bestSeller: false, rating: 4.0 },
-  { id: 3, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #19 – White", price: "$1.35", bestSeller: false, rating: 3.5 },
-  { id: 4, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #20 – Blue", price: "$1.50", bestSeller: false, rating: 5.0 },
-  { id: 5, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #21 – Red", price: "$1.60", bestSeller: false, rating: 4.2 },
-  { id: 6, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #22 – Green", price: "$1.70", bestSeller: false, rating: 3.8 },
-  { id: 7, img: "https://via.placeholder.com/80", name: "Uxflow T-Shirt #23 – Yellow", price: "$1.80", bestSeller: false, rating: 4.7 },
-];
-
-
-
-// Rating Component
+// ──────────────────────────────────────────────
+// Rating Component (with safety)
 const RatingStars = ({ rating }) => {
-  const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 >= 0.5;
-  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+  const num = Number(rating);
+  const value = !isNaN(num) && num >= 0 && num <= 5 ? num : 0;
+
+  const fullStars = Math.floor(value);
+  const hasHalf = value % 1 >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
 
   return (
     <div className="flex items-center gap-0.5 mt-1">
       {Array.from({ length: fullStars }).map((_, i) => (
         <SolidStar key={i} className="w-4 h-4 text-yellow-500" />
       ))}
-      {halfStar && <OutlineStar key="half" className="w-4 h-4 text-yellow-500" />}
+      {hasHalf && (
+        <OutlineStar key="half" className="w-4 h-4 text-yellow-500" />
+      )}
       {Array.from({ length: emptyStars }).map((_, i) => (
         <OutlineStar key={`empty-${i}`} className="w-4 h-4 text-yellow-300" />
       ))}
-      <span className="text-xs text-[#8a6a52] ml-1">{rating.toFixed(1)}</span>
+      <span className="text-xs text-[#8a6a52] ml-1">
+        {value ? value.toFixed(1) : "—"}
+      </span>
     </div>
   );
 };
 
-// Reusable Button
+// Reusable Best Seller Button
 const BestSellerButton = ({ isBestSeller, onClick }) => (
   <button
     onClick={onClick}
     className={clsx(
       "inline-flex items-center gap-1 px-4 py-1 rounded-full font-semibold transition-shadow duration-200",
       isBestSeller
-        ? "bg-[var(--primary)] text-white shadow-md hover:shadow-lg"
-        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+        ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-md hover:shadow-lg"
+        : "bg-gray-200 text-gray-700 hover:bg-gray-300",
     )}
   >
     <SolidStar className="w-4 h-4" />
@@ -63,7 +59,7 @@ const ProductRow = ({ product, onToggle }) => (
   <tr className="border-t hover:bg-[#fff6ec] transition-all">
     <td className="p-3 flex items-center gap-3">
       <img
-        src={product.img}
+        src={product.images?.[0] || "https://via.placeholder.com/80"}
         alt={product.name}
         className="w-12 h-12 rounded-lg border object-cover"
       />
@@ -72,9 +68,14 @@ const ProductRow = ({ product, onToggle }) => (
         <RatingStars rating={product.rating} />
       </div>
     </td>
-    <td className="p-3 text-center font-semibold">{product.price}</td>
+    <td className="p-3 text-center font-semibold">
+      ₹{(product.weights?.[0]?.sellingPrice || 0).toFixed(2)}
+    </td>
     <td className="p-3 text-center">
-      <BestSellerButton isBestSeller={product.bestSeller} onClick={() => onToggle(product.id)} />
+      <BestSellerButton
+        isBestSeller={product.bestSeller}
+        onClick={() => onToggle(product._id)}
+      />
     </td>
   </tr>
 );
@@ -84,65 +85,181 @@ const ProductCard = ({ product, onToggle }) => (
   <div className="p-4 bg-white shadow-lg rounded-xl mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center w-full transition hover:shadow-xl">
     <div className="flex items-center gap-3 w-full sm:w-auto">
       <img
-        src={product.img}
+        src={product.images?.[0] || "https://via.placeholder.com/80"}
         alt={product.name}
         className="w-14 h-14 rounded-lg border object-cover"
       />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{product.name}</p>
-        <p className="text-xs text-[#8a6a52]">{product.price}</p>
+        <p className="text-xs text-[#8a6a52]">
+          ₹{(product.weights?.[0]?.sellingPrice || 0).toFixed(2)}
+        </p>
         <RatingStars rating={product.rating} />
       </div>
     </div>
     <div className="mt-3 sm:mt-0 sm:ml-3 flex-shrink-0">
-      <BestSellerButton isBestSeller={product.bestSeller} onClick={() => onToggle(product.id)} />
+      <BestSellerButton
+        isBestSeller={product.bestSeller}
+        onClick={() => onToggle(product._id)}
+      />
     </div>
   </div>
 );
 
 export default function BestSellerProducts() {
-  const [products, setProducts] = useState(allProducts);
+  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [loading, setLoading] = useState(true);
+
+  const itemsPerPage = 8; // better for admin dashboard
+  const MAX_BEST_SELLERS = 8;
+
+  const adminToken = localStorage.getItem("adminToken");
+
+  useEffect(() => {
+    if (!adminToken) {
+      toast.error("Admin login required");
+      return;
+    }
+
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          "https://sweet-backend-nhwt.onrender.com/api/products",
+          {
+            headers: {
+              Authorization: `Bearer ${adminToken}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            toast.error("Session expired. Please login again.");
+            localStorage.removeItem("adminToken");
+            return;
+          }
+          throw new Error("Failed to fetch products");
+        }
+
+        const result = await response.json();
+
+        const productList = Array.isArray(result.data) ? result.data : [];
+
+        setProducts(productList);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        toast.error("Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [adminToken]);
 
   const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const bestSellerCount = products.filter((p) => p.bestSeller).length;
 
-  const handleToggleBestSeller = (id) => {
+  const handleToggleBestSeller = async (id) => {
+    if (!adminToken) {
+      toast.error("Admin authentication required");
+      return;
+    }
+
+    const target = products.find((p) => p._id === id);
+    if (!target) return;
+
+    if (!target.bestSeller && bestSellerCount >= MAX_BEST_SELLERS) {
+      toast.error(
+        `You can only select ${MAX_BEST_SELLERS} best seller products!`,
+      );
+      return;
+    }
+
+    const previousProducts = [...products];
+
+    // Optimistic update
     setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          if (!p.bestSeller && bestSellerCount >= 4) {
-            toast.error("You can only select 4 best seller products!");
-            return p;
-          }
-          toast.success(!p.bestSeller ? "Added to best seller products" : "Removed from best seller products");
-          return { ...p, bestSeller: !p.bestSeller };
-        }
-        return p;
-      })
+      prev.map((p) => (p._id === id ? { ...p, bestSeller: !p.bestSeller } : p)),
     );
+
+    try {
+      const response = await fetch(
+        `https://sweet-backend-nhwt.onrender.com/api/products/${id}/best-seller`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+        },
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to update best seller status");
+      }
+
+      // Update from server response
+      setProducts((prev) =>
+        prev.map((p) => (p._id === id ? { ...p, ...data.product } : p)),
+      );
+
+      toast.success(
+        data.message ||
+          (target.bestSeller
+            ? "Removed from best seller products"
+            : "Added to best seller products"),
+      );
+    } catch (error) {
+      console.error("Toggle best seller error:", error);
+      toast.error(error.message || "Failed to update");
+
+      // Rollback
+      setProducts(previousProducts);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-[#8a6a52]">
+        Loading products...
+      </div>
+    );
+  }
+
+  if (!adminToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600 font-medium">
+        Please login as admin to manage best seller products.
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] px-4 md:px-10 py-6 text-[#3a2416] space-y-6">
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Best Seller Products</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Best Seller Products
+          </h1>
           <p className="text-sm text-[#8a6a52] mt-1">
-            Select up to 4 products to feature as best sellers.
+            Select up to {MAX_BEST_SELLERS} products to feature as best sellers
+            ({bestSellerCount}/{MAX_BEST_SELLERS} selected)
           </p>
         </div>
       </div>
@@ -174,7 +291,11 @@ export default function BestSellerProducts() {
           </thead>
           <tbody>
             {paginatedProducts.map((p) => (
-              <ProductRow key={p.id} product={p} onToggle={handleToggleBestSeller} />
+              <ProductRow
+                key={p._id}
+                product={p}
+                onToggle={handleToggleBestSeller}
+              />
             ))}
           </tbody>
         </table>
@@ -198,7 +319,7 @@ export default function BestSellerProducts() {
                   "px-2 sm:px-3 py-1 rounded-lg border transition",
                   page === currentPage
                     ? "bg-[#c63b2f] text-white font-semibold"
-                    : "bg-white hover:bg-[#fff1db]"
+                    : "bg-white hover:bg-[#fff1db]",
                 )}
               >
                 {page}
@@ -206,7 +327,9 @@ export default function BestSellerProducts() {
             ))}
 
             <button
-              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage(Math.min(currentPage + 1, totalPages))
+              }
               disabled={currentPage === totalPages}
               className="p-2 rounded-lg border bg-white hover:bg-[#fff1db] disabled:opacity-50 transition"
             >
@@ -217,13 +340,17 @@ export default function BestSellerProducts() {
       </div>
 
       {/* Mobile Cards */}
-      <div className="md:hidden mt-4">
+      <div className="md:hidden mt-4 space-y-4">
         {paginatedProducts.map((p) => (
-          <ProductCard key={p.id} product={p} onToggle={handleToggleBestSeller} />
+          <ProductCard
+            key={p._id}
+            product={p}
+            onToggle={handleToggleBestSeller}
+          />
         ))}
 
         {/* Mobile Pagination */}
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end mt-6">
           <div className="flex items-center gap-1 sm:gap-2 text-sm">
             <button
               onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
@@ -241,7 +368,7 @@ export default function BestSellerProducts() {
                   "px-2 sm:px-3 py-1 rounded-lg border transition",
                   page === currentPage
                     ? "bg-[#c63b2f] text-white font-semibold"
-                    : "bg-white hover:bg-[#fff1db]"
+                    : "bg-white hover:bg-[#fff1db]",
                 )}
               >
                 {page}
@@ -249,7 +376,9 @@ export default function BestSellerProducts() {
             ))}
 
             <button
-              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage(Math.min(currentPage + 1, totalPages))
+              }
               disabled={currentPage === totalPages}
               className="p-2 rounded-lg border bg-white hover:bg-[#fff1db] disabled:opacity-50 transition"
             >

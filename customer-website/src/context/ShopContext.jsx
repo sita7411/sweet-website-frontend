@@ -11,7 +11,10 @@ export const ShopProvider = ({ children, userId }) => {
   const [wishlistItems, setWishlistItems] = useState([]);
 
   useEffect(() => {
-    console.log("[ShopProvider] userId =", userId || "MISSING — login required");
+    console.log(
+      "[ShopProvider] userId =",
+      userId || "MISSING — login required",
+    );
   }, [userId]);
 
   // ───────────── CART FUNCTIONS ─────────────
@@ -49,9 +52,11 @@ export const ShopProvider = ({ children, userId }) => {
           weight: variant.weight,
           qty,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
-      toast.success(`${product.name || "Item"} (${variant.weight}) added to cart!`);
+      toast.success(
+        `${product.name || "Item"} (${variant.weight}) added to cart!`,
+      );
       await fetchCart();
     } catch (err) {
       console.error("Add to cart failed:", err);
@@ -61,30 +66,80 @@ export const ShopProvider = ({ children, userId }) => {
   };
 
   const removeFromCart = async (productId, weight) => {
-    const item = cartItems.find((i) => i.productId === productId && i.weight === weight);
-    if (!item) return;
+    if (!userId) {
+      toast.warn("Please log in first");
+      return;
+    }
 
-    // Optimistic UI update (optional but recommended)
+    const item = cartItems.find(
+      (i) =>
+        String(i.productId) === String(productId) &&
+        String(i.weight) === String(weight),
+    );
+
+    if (!item?._id) {
+      console.warn("Cannot remove – item not found in local cart state", {
+        productId,
+        weight,
+      });
+      toast.warn("Item not found locally – refreshing cart");
+      await fetchCart();
+      return;
+    }
+
+    console.log("Attempting to DELETE cart item:", {
+      cartItemId: item._id,
+      productId,
+      weight,
+      currentCart: cartItems,
+    });
+
+    // Optimistic remove
     setCartItems((prev) =>
-      prev.filter((i) => !(i.productId === productId && i.weight === weight))
+      prev.filter(
+        (i) =>
+          !(
+            String(i.productId) === String(productId) &&
+            String(i.weight) === String(weight)
+          ),
+      ),
     );
 
     try {
-      await axios.delete(`${API_BASE}/api/cart/${item._id}`, {
+      const res = await axios.delete(`${API_BASE}/api/cart/${item._id}`, {
         withCredentials: true,
+        timeout: 30000, // ← increase timeout (Render cold start can take 10–25s)
       });
-      toast.success("Item removed from cart");
-      // No need to call fetchCart() here anymore because of optimistic update
-      // But if you prefer to always refetch: await fetchCart();
+
+      console.log("DELETE RESPONSE:", {
+        status: res.status,
+        data: res.data,
+      });
+
+      toast.success("Removed from cart");
+      await fetchCart(); // MUST refresh after success
     } catch (err) {
-      console.error("Remove from cart failed:", err);
-      toast.error("Failed to remove item. Cart refreshed.");
-      await fetchCart(); // recover correct state
+      console.error("REMOVE FAILED:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        config: err.config?.url,
+      });
+
+      toast.error(
+        err.response?.data?.message || err.message.includes("timeout")
+          ? "Server slow – try again"
+          : "Failed to remove item",
+      );
+
+      // Critical: always recover state
+      await fetchCart();
     }
   };
-
   const updateQty = async (productId, weight, qty) => {
-    const item = cartItems.find((i) => i.productId === productId && i.weight === weight);
+    const item = cartItems.find(
+      (i) => i.productId === productId && i.weight === weight,
+    );
     if (!item) return;
 
     if (qty <= 0) {
@@ -96,7 +151,7 @@ export const ShopProvider = ({ children, userId }) => {
       await axios.put(
         `${API_BASE}/api/cart/${item._id}`,
         { qty },
-        { withCredentials: true }
+        { withCredentials: true },
       );
       toast.success(`Quantity updated to ${qty}`);
       // Optional: await fetchCart();  ← if you want to refetch
@@ -124,7 +179,11 @@ export const ShopProvider = ({ children, userId }) => {
   };
 
   const getCartTotal = () =>
-    cartItems.reduce((total, item) => total + (item.price || item.sellingPrice || 0) * (item.qty || 0), 0);
+    cartItems.reduce(
+      (total, item) =>
+        total + (item.price || item.sellingPrice || 0) * (item.qty || 0),
+      0,
+    );
 
   const getCartCount = () =>
     cartItems.reduce((count, item) => count + (item.qty || 0), 0);
@@ -192,7 +251,7 @@ export const ShopProvider = ({ children, userId }) => {
           productId: product._id,
           selectedWeight: weightToSend,
         },
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (res.data?.action === "added") {
@@ -242,7 +301,7 @@ export const ShopProvider = ({ children, userId }) => {
 
     if (selectedWeight) {
       return wishlistItems.some(
-        (i) => i.productId === productId && i.selectedWeight === selectedWeight
+        (i) => i.productId === productId && i.selectedWeight === selectedWeight,
       );
     }
 

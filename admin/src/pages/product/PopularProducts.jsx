@@ -119,7 +119,6 @@ export default function PopularProductsPage() {
   useEffect(() => {
     if (!adminToken) {
       toast.error("Admin login required");
-      // Optionally: redirect to /admin/login
       return;
     }
 
@@ -140,7 +139,6 @@ export default function PopularProductsPage() {
           if (response.status === 401 || response.status === 403) {
             toast.error("Session expired or unauthorized. Please login again.");
             localStorage.removeItem("adminToken");
-            // window.location.href = "/admin/login";  ← optional redirect
             return;
           }
           const errData = await response.json().catch(() => ({}));
@@ -165,7 +163,7 @@ export default function PopularProductsPage() {
 
         const normalized = productList.map((p) => ({
           ...p,
-          id: p._id, 
+          id: p._id,
         }));
 
         setProducts(normalized);
@@ -200,10 +198,10 @@ export default function PopularProductsPage() {
     const target = products.find((p) => p._id === id);
     if (!target) return;
 
-    if (!target.popular && popularCount >= 4) {
-      toast.error("You can only select 4 popular products!");
-      return;
-    }
+    // if (!target.popular && popularCount >= 8) {
+    //   toast.error("You can only select 4 popular products!");
+    //   return;
+    // }
 
     const previousProducts = [...products];
 
@@ -221,7 +219,6 @@ export default function PopularProductsPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${adminToken}`,
           },
-          // NO credentials: "include" → we use Bearer token
         },
       );
 

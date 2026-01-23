@@ -1,3 +1,4 @@
+// PopularItems.jsx
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
@@ -16,10 +17,11 @@ export default function PopularItems() {
   const [index, setIndex] = useState(0);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState({}); // temporary visual feedback
-  const [selectedWeights, setSelectedWeights] = useState({}); // track per-product weight
-
+  const [adding, setAdding] = useState({});
+  const [selectedWeights, setSelectedWeights] = useState({});
   const { addToCart, toggleWishlist, isInWishlist } = useShop();
+
+  const ITEMS_PER_PAGE = 4; // number of visible cards on desktop
 
   // Fetch popular products
   useEffect(() => {
@@ -28,7 +30,8 @@ export default function PopularItems() {
         setLoading(true);
         const res = await axios.get(`${API_BASE}/api/products/popular/`);
         setProducts(res.data || []);
-        // initialize selected weight as first variant for each product
+
+        // Initialize selected weight as first variant
         const initialWeights = {};
         res.data.forEach((p) => {
           if (p.weights?.length) initialWeights[p._id] = p.weights[0];
@@ -45,10 +48,9 @@ export default function PopularItems() {
     fetchPopular();
   }, []);
 
-  // Auto-play only on mobile
+  // Mobile autoplay
   useEffect(() => {
     let interval;
-
     const startAutoPlay = () => {
       if (window.innerWidth < 768 && products.length > 0) {
         interval = setInterval(() => {
@@ -56,14 +58,12 @@ export default function PopularItems() {
         }, 4000);
       }
     };
-
     startAutoPlay();
 
     const handleResize = () => {
       clearInterval(interval);
       startAutoPlay();
     };
-
     window.addEventListener("resize", handleResize);
     return () => {
       clearInterval(interval);
@@ -71,25 +71,30 @@ export default function PopularItems() {
     };
   }, [products.length]);
 
-  const prevSlide = () =>
-    setIndex((prev) => (prev === 0 ? products.length - 1 : prev - 1));
+  // Desktop slide handlers — move by ITEMS_PER_PAGE
+  const maxIndex = Math.max(products.length - ITEMS_PER_PAGE, 0);
 
-  const nextSlide = () =>
-    setIndex((prev) => (prev === products.length - 1 ? 0 : prev + 1));
-
-  const getVisibleItems = (count = 4) => {
-    if (!products.length) return [];
-    const visible = [];
-    for (let i = 0; i < count; i++) {
-      visible.push(products[(index + i) % products.length]);
-    }
-    return visible;
+  const prevSlide = () => {
+    setIndex((prev) => Math.max(prev - ITEMS_PER_PAGE, 0));
   };
 
+  const nextSlide = () => {
+    setIndex((prev) => Math.min(prev + ITEMS_PER_PAGE, maxIndex));
+  };
+
+  // Add to cart
   const handleAddToCart = async (product) => {
-    const variant = selectedWeights[product._id];
-    if (!variant?.weight || !variant?.price) {
-      toast.warn("Please select a valid weight variant");
+    const variant = selectedWeights[product._id] || product.weights?.[0];
+
+    if (!variant?.weight) {
+      toast.warn("Please select a weight variant");
+      return;
+    }
+
+    // Use correct price field (sellingPrice is primary)
+    const displayPrice = variant.sellingPrice || variant.mrp || variant.price;
+    if (!displayPrice || displayPrice <= 0) {
+      toast.warn("This variant has no valid price");
       return;
     }
 
@@ -99,7 +104,9 @@ export default function PopularItems() {
     try {
       await addToCart(product, variant, 1);
     } catch (err) {
-      // handled in context
+      console.error("Add to cart error:", err);
+      // ShopContext already shows toast, but extra safety
+      toast.error("Failed to add to cart");
     } finally {
       setTimeout(() => {
         setAdding((prev) => ({ ...prev, [key]: false }));
@@ -107,7 +114,7 @@ export default function PopularItems() {
     }
   };
 
-  if (loading) {
+  if (loading)
     return (
       <section className="py-10 -mt-8">
         <div className="max-w-6xl mx-auto text-center">
@@ -117,7 +124,6 @@ export default function PopularItems() {
         </div>
       </section>
     );
-  }
 
   if (!products.length) return null;
 
@@ -146,18 +152,27 @@ export default function PopularItems() {
           className="hidden md:flex relative rounded-[60px] px-1 py-15 -mt-8 bg-cover bg-center bg-no-repeat flex items-center justify-center"
           style={{ backgroundImage: "url('Group 57.png')" }}
         >
+          {/* Left Arrow */}
           <button
             onClick={prevSlide}
-            className="absolute -left-11 top-1/2 -translate-y-1/2 w-19 h-19 rounded-full bg-white shadow flex items-center justify-center hover:scale-110 transition"
+            disabled={index === 0}
+            className={`absolute -left-11 top-1/2 -translate-y-1/2 w-19 h-19 rounded-full bg-white shadow flex items-center justify-center transition ${
+              index === 0 ? "opacity-40 cursor-not-allowed" : "hover:scale-110"
+            }`}
           >
             <ChevronLeftIcon className="w-8 h-8 text-[var(--text-main)]" />
           </button>
 
-          <div className="flex grid-cols-4 gap-6 mt-13 justify-center">
-            {getVisibleItems(4).map((product, i) => {
-              const wishlisted = isInWishlist(product._id);
+          {/* 4 Cards */}
+          <div className="flex gap-6 mt-13 justify-center">
+            {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => {
+              const productIndex = index + i;
+              if (productIndex >= products.length) return null;
+
+              const product = products[productIndex];
               const variant =
                 selectedWeights[product._id] || product.weights?.[0];
+              const wishlisted = isInWishlist(product._id);
               const isAdding = adding[`${product._id}-${variant?.weight}`];
 
               return (
@@ -176,11 +191,12 @@ export default function PopularItems() {
                     className="absolute -top-14 left-1/2 -translate-x-1/2 w-25 h-25 bg-[var(--bg-card)] rounded-full shadow-md flex items-center justify-center"
                   >
                     <img
-                      src={product.images?.[0]?.url || "/placeholder.png"}
+                      src={product.images?.[0] || "/placeholder.png"}
                       alt={product.name}
                       className="w-24 h-24 rounded-full object-cover"
                     />
                   </motion.div>
+
                   <h3 className="text-[15px] -mt-12 font-semibold text-[var(--text-main)]">
                     {product.name}
                   </h3>
@@ -191,12 +207,12 @@ export default function PopularItems() {
                   </p>
 
                   {/* Weight Selection */}
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-2 justify-center">
                     {product.weights?.map((w) => (
                       <button
                         key={w.weight}
                         className={`px-2 py-1 rounded-full border text-xs ${
-                          variant.weight === w.weight
+                          variant?.weight === w.weight
                             ? "bg-[var(--accent)] text-white"
                             : "bg-white text-[var(--primary)]"
                         }`}
@@ -207,14 +223,14 @@ export default function PopularItems() {
                           }))
                         }
                       >
-                        {w.weight} - ₹{w.sellingPrice || w.price}
+                        {w.weight}
                       </button>
                     ))}
                   </div>
 
                   <div className="flex items-center justify-between mt-3">
                     <p className="text-[22px] font-bold text-[var(--secondary)]">
-                      ₹{variant.sellingPrice || variant.price}
+                      ₹{variant?.sellingPrice || variant?.price || "—"}
                     </p>
                     <motion.button
                       onClick={() => toggleWishlist(product, variant?.weight)}
@@ -228,6 +244,7 @@ export default function PopularItems() {
                       <HeartIcon className="w-4 h-4" />
                     </motion.button>
                   </div>
+
                   <div className="flex items-center justify-between mt-4 -ml-2 gap-3">
                     <motion.button
                       onClick={() => handleAddToCart(product)}
@@ -251,9 +268,15 @@ export default function PopularItems() {
             })}
           </div>
 
+          {/* Right Arrow */}
           <button
             onClick={nextSlide}
-            className="absolute -right-11 top-1/2 -translate-y-1/2 w-19 h-19 rounded-full bg-white shadow flex items-center justify-center hover:scale-110 transition"
+            disabled={index >= maxIndex}
+            className={`absolute -right-11 top-1/2 -translate-y-1/2 w-19 h-19 rounded-full bg-white shadow flex items-center justify-center transition ${
+              index >= maxIndex
+                ? "opacity-40 cursor-not-allowed"
+                : "hover:scale-110"
+            }`}
           >
             <ChevronRightIcon className="w-8 h-8 text-[var(--text-main)]" />
           </button>
@@ -284,7 +307,7 @@ export default function PopularItems() {
                         className="w-32 h-32 mx-auto mb-3 rounded-full overflow-hidden bg-[var(--bg-card)] shadow-md"
                       >
                         <img
-                          src={product.images?.[0]?.url || "/placeholder.png"}
+                          src={product.images?.[0] || "/placeholder.png"}
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />
@@ -297,13 +320,12 @@ export default function PopularItems() {
                         {product.subtitle || "Handcrafted delight"}
                       </p>
 
-                      {/* Weight Selection */}
                       <div className="flex gap-2 mt-2 justify-center flex-wrap">
                         {product.weights?.map((w) => (
                           <button
                             key={w.weight}
                             className={`px-2 py-1 rounded-full border text-xs ${
-                              variant.weight === w.weight
+                              variant?.weight === w.weight
                                 ? "bg-[var(--accent)] text-white"
                                 : "bg-white text-[var(--primary)]"
                             }`}
@@ -314,14 +336,14 @@ export default function PopularItems() {
                               }))
                             }
                           >
-                            {w.weight} - ₹{w.sellingPrice || w.price}
+                            {w.weight}
                           </button>
                         ))}
                       </div>
 
                       <div className="flex items-center justify-between mt-4">
                         <span className="text-2xl font-bold text-[var(--secondary)]">
-                          ₹{variant.sellingPrice || variant.price}
+                          ₹{variant?.sellingPrice || variant?.price || "—"}
                         </span>
                         <motion.button
                           onClick={() =>

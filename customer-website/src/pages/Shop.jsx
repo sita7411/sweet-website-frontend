@@ -29,7 +29,7 @@ export default function ProductPage() {
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeWeight, setActiveWeight] = useState("All");
-  const [selectedVariant, setSelectedVariant] = useState({}); // { productId: "200g" }
+  const [selectedVariant, setSelectedVariant] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [maxPrice, setMaxPrice] = useState(2000);
   const [sortBy, setSortBy] = useState("Default sorting");
@@ -57,7 +57,6 @@ export default function ProductPage() {
 
         const response = await res.json();
 
-        // Safely extract the array of products
         let productList = [];
         if (Array.isArray(response)) {
           productList = response;
@@ -69,7 +68,6 @@ export default function ProductPage() {
 
         setProducts(productList);
 
-        // Calculate highest price for slider
         const allPrices = productList.flatMap(
           (p) => p.weights?.map((w) => w.sellingPrice || w.price || 0) || [],
         );
@@ -155,7 +153,7 @@ export default function ProductPage() {
   };
 
   // ────────────────────────────────────────────────
-  // Sidebar Content (shared between desktop & mobile)
+  // Sidebar Content 
   // ────────────────────────────────────────────────
   const SidebarContent = () => {
     const topProducts = products
@@ -301,9 +299,9 @@ export default function ProductPage() {
     );
   };
 
-  // ────────────────────────────────────────────────
+  // ─────────────────────────
   // Variant & Sort Dropdowns
-  // ────────────────────────────────────────────────
+  // ─────────────────────────
   function VariantDropdown({ item, selected, onSelect }) {
     const [open, setOpen] = useState(false);
     const variants = item.weights || [];
@@ -410,9 +408,9 @@ export default function ProductPage() {
     );
   }
 
-  // ────────────────────────────────────────────────
+  // ────────────
   // RENDER
-  // ────────────────────────────────────────────────
+  // ────────────
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-xl">

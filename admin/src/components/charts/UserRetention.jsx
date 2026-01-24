@@ -89,6 +89,15 @@ const UserRetention = () => {
         </div>
       </div>
 
+   {/* MONTHS */}
+      <div
+        className="flex gap-[4px] md:gap-[3px] pl-[56px] text-[9px] -ml-3 mt-2 flex-wrap"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {months.map((m) => (
+          <span key={m}>{m}</span>
+        ))}
+      </div>
       {/* HEATMAP */}
       <div className="space-y-2 mt-3">
         {data.map((row, i) => {
@@ -96,7 +105,7 @@ const UserRetention = () => {
           return (
             <div key={i} className="flex items-center w-full">
               <span
-                className="w-14 text-[9px] flex-shrink-0"
+                className="w-11 text-[9px] flex-shrink-0"
                 style={{ color: "var(--text-muted)" }}
               >
                 {cohorts[i]}
@@ -161,15 +170,7 @@ const UserRetention = () => {
         </div>
       </div>
 
-      {/* MONTHS */}
-      <div
-        className="flex gap-[4px] md:gap-[6px] pl-[56px] text-[9px] -ml-3 mt-2 flex-wrap"
-        style={{ color: "var(--text-muted)" }}
-      >
-        {months.map((m) => (
-          <span key={m}>{m}</span>
-        ))}
-      </div>
+ 
 
       {/* FOOTER */}
       <p className="text-[9px] mt-2" style={{ color: "var(--text-muted)" }}>

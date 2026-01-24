@@ -48,7 +48,6 @@ const sidebarLinks = [
     submenu: [
       { name: "All Customers", path: "/customers" },
       { name: "Add Customer", path: "/customers/add" },
-      { name: "Customer Groups", path: "/customers/groups" },
     ],
   },
   {

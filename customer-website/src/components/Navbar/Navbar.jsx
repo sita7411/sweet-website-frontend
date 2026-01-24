@@ -20,6 +20,9 @@ import { useAuth } from "../../context/AuthContext";
 import { useShop } from "../../context/ShopContext";
 import "./Navbar.css";
 
+const API_LOGO = "https://sweet-backend-nhwt.onrender.com/api/contact/";
+const BACKEND_BASE = "https://sweet-backend-nhwt.onrender.com";
+
 export default function Navbar() {
   const { user, logout } = useAuth();
   const isLoggedIn = !!user;
@@ -37,8 +40,43 @@ export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const [logoUrl, setLogoUrl] = useState("/Logo_Marvel.png");
   const menuRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const res = await fetch(API_LOGO, {
+          method: "GET",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch logo: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        let fetchedLogo = data?.data?.logo;
+        if (fetchedLogo && typeof fetchedLogo === "string") {
+          // Make logo URL absolute (critical fix)
+          if (
+            !fetchedLogo.startsWith("http") &&
+            !fetchedLogo.startsWith("//")
+          ) {
+            fetchedLogo = `${BACKEND_BASE}${fetchedLogo.startsWith("/") ? "" : "/"}${fetchedLogo}`;
+          }
+
+          setLogoUrl(fetchedLogo);
+        }
+      } catch (err) {
+        console.warn("Logo fetch failed, staying with fallback:", err);
+        // fallback is already set in state
+      }
+    };
+
+    fetchLogo();
+  }, []); // runs once on mount
 
   // Scroll effect
   useEffect(() => {
@@ -78,9 +116,17 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 h-[90px] flex items-center justify-between">
-        {/* Logo */}
+        {/* Logo – now correctly absolute */}
         <Link to="/" className="flex items-center">
-          <img src="/Logo_Marvel.png" alt="Marvel Crunch" className="w-24" />
+          <img
+            src={logoUrl}
+            alt="Marvel Crunch"
+            className="w-24 object-contain"
+            onError={(e) => {
+              e.currentTarget.src = "/Logo_Marvel.png"; // fallback if loaded URL fails
+              e.currentTarget.onerror = null;
+            }}
+          />
         </Link>
 
         {/* Desktop Search */}
@@ -300,7 +346,6 @@ export default function Navbar() {
       </AnimatePresence>
 
       {/* Cart Slideover */}
-      {/* Cart Slideover */}
       <AnimatePresence>
         {cartOpen && (
           <>
@@ -435,7 +480,6 @@ export default function Navbar() {
                     <span>₹{cartSubtotal.toFixed(0)}</span>
                   </div>
 
-                  {/* Optional: keep your delivery info block if you like it */}
                   <div className="bg-[var(--bg-soft)] rounded-xl p-4 space-y-2.5 text-sm">
                     <div className="flex items-center gap-2 font-semibold text-[var(--text-main)]">
                       <Truck size={18} className="text-[var(--primary)]" />

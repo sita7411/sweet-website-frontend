@@ -21,84 +21,84 @@ export default function FinanceReports() {
   const itemsPerPage = 15;
 
   useEffect(() => {
-  const fetchFinanceData = async () => {
-    setLoading(true);
-    setError(null);
+    const fetchFinanceData = async () => {
+      setLoading(true);
+      setError(null);
 
-    const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("adminToken");
 
-    if (!token) {
-      setError("Please login first");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Fetch stats
-      const statsRes = await fetch(`${API_BASE}/api/orders/admin/stats`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!statsRes.ok) {
-        console.log("Stats failed with status:", statsRes.status);
-        throw new Error(`Stats failed: ${statsRes.status}`);
+      if (!token) {
+        setError("Please login first");
+        setLoading(false);
+        return;
       }
 
-      const statsJson = await statsRes.json();
-      console.log("Stats response:", statsJson);
-
-      if (statsJson.success && Array.isArray(statsJson.stats)) {
-        const iconMap = {
-          "Total Revenue": IndianRupee,
-          "Total Transactions": FileText,
-          "Avg Order Value": ShoppingCart,
-        };
-
-        const enrichedStats = statsJson.stats.map(item => ({
-          ...item,
-          icon: iconMap[item.title] || IndianRupee // safe fallback
-        }));
-
-        setStats(enrichedStats);
-      } else {
-        console.warn("Stats format invalid:", statsJson);
-      }
-
-      // Fetch transactions (your existing code)
-      const txnRes = await fetch(
-        `${API_BASE}/api/orders/admin/transactions?page=${currentPage}&limit=${itemsPerPage}`,
-        {
+      try {
+        // Fetch stats
+        const statsRes = await fetch(`${API_BASE}/api/orders/admin/stats`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
+        });
+
+        if (!statsRes.ok) {
+          console.log("Stats failed with status:", statsRes.status);
+          throw new Error(`Stats failed: ${statsRes.status}`);
         }
-      );
 
-      if (!txnRes.ok) {
-        console.log("Transactions failed with status:", txnRes.status);
-        throw new Error(`Transactions failed: ${txnRes.status}`);
+        const statsJson = await statsRes.json();
+        console.log("Stats response:", statsJson);
+
+        if (statsJson.success && Array.isArray(statsJson.stats)) {
+          const iconMap = {
+            "Total Revenue": IndianRupee,
+            "Total Transactions": FileText,
+            "Avg Order Value": ShoppingCart,
+          };
+
+          const enrichedStats = statsJson.stats.map((item) => ({
+            ...item,
+            icon: iconMap[item.title] || IndianRupee, // safe fallback
+          }));
+
+          setStats(enrichedStats);
+        } else {
+          console.warn("Stats format invalid:", statsJson);
+        }
+
+        // Fetch transactions (your existing code)
+        const txnRes = await fetch(
+          `${API_BASE}/api/orders/admin/transactions?page=${currentPage}&limit=${itemsPerPage}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (!txnRes.ok) {
+          console.log("Transactions failed with status:", txnRes.status);
+          throw new Error(`Transactions failed: ${txnRes.status}`);
+        }
+
+        const txnJson = await txnRes.json();
+        console.log("Transactions response:", txnJson);
+
+        if (txnJson.success) {
+          setTransactions(txnJson.transactions || []);
+          setTotalPages(txnJson.pagination?.totalPages || 1);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError("Failed to load data. Please try again.");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const txnJson = await txnRes.json();
-      console.log("Transactions response:", txnJson);
-
-      if (txnJson.success) {
-        setTransactions(txnJson.transactions || []);
-        setTotalPages(txnJson.pagination?.totalPages || 1);
-      }
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setError("Failed to load data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchFinanceData();
-}, [currentPage]);
+    fetchFinanceData();
+  }, [currentPage]);
 
   const goToPage = (page) => {
     if (page < 1 || page > totalPages) return;

@@ -1,28 +1,86 @@
 // src/pages/admin/AdminContactPage.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Save, Phone, Mail, MapPin, MessageCircle, Upload, Loader2 } from "lucide-react";
+import {
+  Save,
+  Phone,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Upload,
+  Loader2,
+} from "lucide-react";
+
+const API_BASE = "https://sweet-backend-nhwt.onrender.com/api/contact/";
+const BASE_URL = "https://sweet-backend-nhwt.onrender.com"; // for absolute logo URLs
 
 const defaultContactData = {
   logo: "/logo-placeholder.png",
   phone: "+91 99461 37919",
   whatsapp: "+91 99461 37919",
   email: "Info@MarvelCrunch.com",
-  address: "Plot No. 133, Shreeji Textile Velenja Sayan Road, Nr.Ramvatika Velenja – 394150",
+  address:
+    "Plot No. 133, Shreeji Textile Velenja Sayan Road, Nr.Ramvatika Velenja – 394150",
   googleMapEmbedUrl:
     "https://www.google.com/maps?q=Plot+No.+133,+Shreeji+Textile+Velenja+Sayan+Road,+Nr.Ramvatika+Velenja+–+394150&output=embed",
 };
 
 const AdminContactPage = () => {
   const [formData, setFormData] = useState(defaultContactData);
+  const [logoFile, setLogoFile] = useState(null); // NEW: separate state for file
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
   const [logoPreview, setLogoPreview] = useState(defaultContactData.logo);
   const fileInputRef = useRef(null);
 
+  const adminToken = localStorage.getItem("adminToken");
+
+  // Fetch existing contact info
   useEffect(() => {
-    // Simulate fetching data from backend
-  }, []);
+    const fetchContactInfo = async () => {
+      if (!adminToken) {
+        console.warn("Admin token missing. Cannot fetch contact info.");
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+
+        if (res.status === 401) {
+          console.error("Unauthorized. Admin token invalid/expired.");
+          return;
+        }
+
+        if (!res.ok) throw new Error("Failed to fetch contact info");
+
+        const contact = await res.json();
+
+        // Make logo URL absolute
+        const logoPath = contact.logo || defaultContactData.logo;
+        const fullLogoUrl = logoPath.startsWith("http")
+          ? logoPath
+          : `${BASE_URL}${logoPath.startsWith("/") ? "" : "/"}${logoPath}`;
+
+        setFormData({
+          logo: fullLogoUrl,
+          phone: contact.phone || "",
+          whatsapp: contact.whatsapp || "",
+          email: contact.email || "",
+          address: contact.address || "",
+          googleMapEmbedUrl: contact.googleMapEmbedUrl || "",
+        });
+        setLogoPreview(fullLogoUrl);
+      } catch (err) {
+        console.error("Fetch Contact Info Error:", err);
+        setFormData(defaultContactData);
+        setLogoPreview(defaultContactData.logo);
+      }
+    };
+
+    fetchContactInfo();
+  }, [adminToken]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,13 +89,14 @@ const AdminContactPage = () => {
   };
 
   const handleLogoChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setLogoPreview(reader.result);
-      setFormData((prev) => ({ ...prev, logo: file }));
+      setLogoPreview(reader.result); // data URL for preview
+      setLogoFile(file); // store actual File object
+      // IMPORTANT: do NOT set formData.logo = file anymore
     };
     reader.readAsDataURL(file);
   };
@@ -47,11 +106,80 @@ const AdminContactPage = () => {
     setIsSaving(true);
     setSaveStatus(null);
 
+    if (!adminToken) {
+      alert("Admin not logged in. Cannot update contact info.");
+      setIsSaving(false);
+      return;
+    }
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200)); // simulate API
+      const data = new FormData();
+      data.append("phone", formData.phone);
+      data.append("whatsapp", formData.whatsapp);
+      data.append("email", formData.email);
+      data.append("address", formData.address);
+      data.append("googleMapEmbedUrl", formData.googleMapEmbedUrl);
+
+      // Append logo only if a new file was selected
+      if (logoFile) {
+        data.append("logo", logoFile);
+      }
+
+      const res = await fetch(API_BASE, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: data,
+      });
+
+      if (res.status === 401) {
+        alert(
+          "Unauthorized. Your session may have expired. Please login again.",
+        );
+        setSaveStatus("error");
+        setIsSaving(false);
+        return;
+      }
+
+      if (!res.ok) throw new Error("Failed to update contact info");
+
+      const updatedData = await res.json();
+
+      // ── Handle logo URL safely ──
+      let fullLogoUrl = logoPreview; // fallback to current preview
+
+      if (updatedData.logo && typeof updatedData.logo === "string") {
+        fullLogoUrl =
+          updatedData.logo.startsWith("http") ||
+          updatedData.logo.startsWith("//")
+            ? updatedData.logo
+            : `${BASE_URL}${updatedData.logo.startsWith("/") ? "" : "/"}${updatedData.logo}`;
+      }
+
+      // Update form data (logo is always string)
+      setFormData({
+        ...formData,
+        logo: fullLogoUrl,
+        phone: updatedData.phone || formData.phone,
+        whatsapp: updatedData.whatsapp || formData.whatsapp,
+        email: updatedData.email || formData.email,
+        address: updatedData.address || formData.address,
+        googleMapEmbedUrl:
+          updatedData.googleMapEmbedUrl || formData.googleMapEmbedUrl,
+      });
+
+      setLogoPreview(fullLogoUrl);
+      setLogoFile(null); // clear file after success
+
+      // Reset file input visually
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
       setSaveStatus("success");
     } catch (err) {
-      console.error(err);
+      console.error("Update Error:", err);
       setSaveStatus("error");
     } finally {
       setIsSaving(false);
@@ -91,9 +219,15 @@ const AdminContactPage = () => {
                       src={logoPreview}
                       alt="Logo preview"
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = "/logo-placeholder.png";
+                        e.currentTarget.onerror = null;
+                      }}
                     />
                   ) : (
-                    <span className="text-[var(--text-muted)] text-xs sm:text-sm">No logo</span>
+                    <span className="text-[var(--text-muted)] text-xs sm:text-sm">
+                      No logo
+                    </span>
                   )}
                 </div>
               </div>
@@ -220,7 +354,8 @@ const AdminContactPage = () => {
                 placeholder="https://www.google.com/maps?q=..."
               />
               <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-[var(--text-muted)]">
-                Tip: Google Maps → Share → Embed a map → Copy only the <code>src</code> value
+                Tip: Google Maps → Share → Embed a map → Copy only the{" "}
+                <code>src</code> value
               </p>
             </div>
           </div>

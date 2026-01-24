@@ -1,10 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 
 const MonthlyTargetCard = () => {
-  const defaultTarget = 600000; // Default target
-  const [target, setTarget] = useState(defaultTarget);
-  const [percentage, setPercentage] = useState(85);
+  const [target, setTarget] = useState(0);
+  const [revenue, setRevenue] = useState(0);
+  const [percentage, setPercentage] = useState(0);
   const [editingTarget, setEditingTarget] = useState(false);
+  const [openMenu, setOpenMenu] = useState(false);
+  const menuRef = useRef(null);
 
   const size = 140;
   const strokeWidth = 14;
@@ -12,9 +15,36 @@ const MonthlyTargetCard = () => {
   const circumference = Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
 
-  const [openMenu, setOpenMenu] = useState(false);
-  const menuRef = useRef(null);
+  // Fetch revenue from API
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      try {
+        const token = localStorage.getItem("adminToken");
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_BASE}/api/stats/monthly-revenue`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        const revenueValue = res.data.data?.revenue || 0;
+        setRevenue(revenueValue);
+      } catch (err) {
+        console.error("Failed to fetch revenue:", err);
+      }
+    };
+    fetchRevenue();
+  }, []);
 
+  // Calculate percentage whenever target or revenue changes
+  useEffect(() => {
+    if (target > 0) {
+      setPercentage(Math.min(Math.round((revenue / target) * 100), 100));
+    }
+  }, [target, revenue]);
+
+  // Close menu if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -32,35 +62,32 @@ const MonthlyTargetCard = () => {
     const value = parseInt(e.target.targetValue.value.replace(/\D/g, ""));
     if (!isNaN(value)) {
       setTarget(value);
-      setPercentage(Math.min(Math.round((value / defaultTarget) * 100), 100));
     }
     setEditingTarget(false);
   };
 
   const handleReset = () => {
-    setTarget(defaultTarget);
-    setPercentage(85);
+    setTarget(0);
     setEditingTarget(false);
     setOpenMenu(false);
   };
 
   const handleViewDetails = () => {
     alert(
-      `Target: ₹${target.toLocaleString()}\nRevenue: ₹510,000\nProgress: ${percentage}%`
+      `Target: ₹${target.toLocaleString()}\nRevenue: ₹${revenue.toLocaleString()}\nProgress: ${percentage}%`,
     );
     setOpenMenu(false);
   };
 
   return (
-    <div className=" p-4 sm:p-6 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto relative">
-
+    <div className="p-4 sm:p-6 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto relative">
       {/* Header */}
       <div className="flex justify-between items-center mb-3 sm:mb-4">
         <h2 className="text-sm sm:text-base font-semibold text-[#3a2416]">
           Monthly Target
         </h2>
 
-        {/* 3 Dots + Dropdown */}
+        {/* Menu */}
         <div className="relative" ref={menuRef}>
           <span
             className="text-[#8a6a52] text-lg cursor-pointer select-none"
@@ -130,7 +157,7 @@ const MonthlyTargetCard = () => {
             {percentage}%
           </div>
           <div className="text-[10px] sm:text-[11px] text-green-600 mt-0.5">
-            +8.02%
+            +{revenue > 0 ? `₹${revenue.toLocaleString()}` : "-"}
           </div>
         </div>
       </div>
@@ -154,7 +181,7 @@ const MonthlyTargetCard = () => {
               <input
                 name="targetValue"
                 type="text"
-                defaultValue={`₹${target.toLocaleString()}`}
+                defaultValue={target > 0 ? `₹${target.toLocaleString()}` : ""}
                 className="w-20 text-sm sm:text-base font-semibold text-[#3a2416] text-center border-b border-[#c63b2f] focus:outline-none"
                 autoFocus
                 onBlur={() => setEditingTarget(false)}
@@ -162,7 +189,7 @@ const MonthlyTargetCard = () => {
             </form>
           ) : (
             <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
-              ₹{target.toLocaleString()}
+              {target > 0 ? `₹${target.toLocaleString()}` : "-"}
             </p>
           )}
         </div>
@@ -170,14 +197,18 @@ const MonthlyTargetCard = () => {
         <div className="bg-white rounded-lg py-2 sm:py-3 shadow-sm">
           <p className="text-[10px] sm:text-[11px] text-[#8a6a52]">Revenue</p>
           <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
-            ₹51000
+            ₹{revenue.toLocaleString()}
           </p>
         </div>
       </div>
 
       {/* Extra Note */}
       <div className="text-center text-[10px] sm:text-[11px] text-[#8a6a52]">
-        Keep pushing! You're <span className="font-semibold text-[#3a2416]">{100 - percentage}%</span> away from your goal.
+        Keep pushing! You're{" "}
+        <span className="font-semibold text-[#3a2416]">
+          {target > 0 ? 100 - percentage : 0}%
+        </span>{" "}
+        away from your goal.
       </div>
     </div>
   );

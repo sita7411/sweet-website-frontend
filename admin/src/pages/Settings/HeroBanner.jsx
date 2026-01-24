@@ -1,50 +1,113 @@
 // src/components/admin/ChikkiAdminPanel.jsx
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const DEFAULT_LEFT_CONTENT = {
-  heading: 'Crafted With Care,<br />Chikki You Truly Love',
+  heading: "Crafted With Care,<br />Chikki You Truly Love",
   description:
-    'Experience the authentic taste of handcrafted chikki made with premium nuts, seeds, and natural jaggery. A perfect balance of tradition, purity, and delightful flavors.',
-  buttonText: 'Explore Our Chikki',
+    "Experience the authentic taste of handcrafted chikki made with premium nuts, seeds, and natural jaggery. A perfect balance of tradition, purity, and delightful flavors.",
+  buttonText: "Explore Our Chikki",
 };
 
-export default function ChikkiAdminPanel() {
-  const [leftContent, setLeftContent] = useState(() => {
-    const saved = localStorage.getItem('leftContent');
-    return saved ? JSON.parse(saved) : DEFAULT_LEFT_CONTENT;
-  });
+const API_BASE = "https://sweet-backend-nhwt.onrender.com/api/hero";
+const BASE_URL = "https://sweet-backend-nhwt.onrender.com";
 
-  const [chikkis, setChikkis] = useState(() => {
-    const saved = localStorage.getItem('chikkiVariants');
-    return saved ? JSON.parse(saved) : [];
-  });
+export default function ChikkiAdminPanel() {
+  const [leftContent, setLeftContent] = useState(DEFAULT_LEFT_CONTENT);
+  const [chikkis, setChikkis] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [editingLeft, setEditingLeft] = useState(false);
-  const [editingChikkiId, setEditingChikkiId] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, index: null });
+  const [editingChikkiId, setEditingChikkiId] = useState(null); // _id string or -1 for new
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
+  // helper to generate consistent preview key
+  const previewKey = (field) =>
+    `${editingChikkiId === -1 ? "new" : editingChikkiId}-${field}`;
 
   const [form, setForm] = useState({
-    name: '',
-    description: '',
-    mainImage: '',
-    icon: '',
-    floatTop: '',
-    floatLeft: 'nuts.png',
+    name: "",
+    description: "",
+    mainImage: null, // will be File | string (path)
+    icon: null,
+    floatTop: null,
+    floatLeft: null,
   });
 
   const [imagePreviews, setImagePreviews] = useState({});
-  const IMAGE_BASE_PATH = '/images/';
 
-  useEffect(() => {
-    localStorage.setItem('leftContent', JSON.stringify(leftContent));
-  }, [leftContent]);
+  const adminToken = localStorage.getItem("adminToken");
 
+  // Fetch initial data
   useEffect(() => {
-    localStorage.setItem('chikkiVariants', JSON.stringify(chikkis));
-  }, [chikkis]);
+    const fetchData = async () => {
+      if (!adminToken) {
+        toast.error("Admin login required");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await fetch(API_BASE, {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        });
+
+        if (res.status === 401) {
+          toast.error("Session expired. Please login again.");
+          return;
+        }
+
+        if (!res.ok) throw new Error("Failed to load hero content");
+
+        const data = await res.json();
+
+        // Left content
+        setLeftContent({
+          heading: data?.leftContent?.heading || DEFAULT_LEFT_CONTENT.heading,
+          description:
+            data?.leftContent?.description || DEFAULT_LEFT_CONTENT.description,
+          buttonText:
+            data?.leftContent?.buttonText || DEFAULT_LEFT_CONTENT.buttonText,
+        });
+
+        // Variants – convert image paths to full URLs
+        const variants = (data?.variants || []).map((v) => ({
+          ...v,
+          mainImage: v.mainImage
+            ? v.mainImage.startsWith("http")
+              ? v.mainImage
+              : `${BASE_URL}${v.mainImage.startsWith("/") ? "" : "/"}${v.mainImage}`
+            : "",
+          icon: v.icon
+            ? v.icon.startsWith("http")
+              ? v.icon
+              : `${BASE_URL}${v.icon.startsWith("/") ? "" : "/"}${v.icon}`
+            : "",
+          floatTop: v.floatTop
+            ? v.floatTop.startsWith("http")
+              ? v.floatTop
+              : `${BASE_URL}${v.floatTop.startsWith("/") ? "" : "/"}${v.floatTop}`
+            : "",
+          floatLeft: v.floatLeft
+            ? v.floatLeft.startsWith("http")
+              ? v.floatLeft
+              : `${BASE_URL}${v.floatLeft.startsWith("/") ? "" : "/"}${v.floatLeft}`
+            : "",
+        }));
+
+        setChikkis(variants);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load content");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [adminToken]);
 
   // ── Left Content Handlers ───────────────────────────────────────
   const handleLeftChange = (e) => {
@@ -52,9 +115,27 @@ export default function ChikkiAdminPanel() {
     setLeftContent((prev) => ({ ...prev, [name]: value }));
   };
 
-  const saveLeftContent = () => {
-    setEditingLeft(false);
-    toast.success('Hero left content saved successfully!');
+  const saveLeftContent = async () => {
+    if (!adminToken) return toast.error("Admin login required");
+
+    try {
+      const res = await fetch(API_BASE, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ leftContent }),
+      });
+
+      if (!res.ok) throw new Error("Update failed");
+
+      setEditingLeft(false);
+      toast.success("Hero left content saved successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not save left content");
+    }
   };
 
   // ── Chikki Form Handlers ────────────────────────────────────────
@@ -62,31 +143,30 @@ export default function ChikkiAdminPanel() {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleImageSelect = (e, field) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = () => {
       setImagePreviews((prev) => ({
         ...prev,
-        [`${editingChikkiId}-${field}`]: reader.result,
+        [previewKey(field)]: reader.result,
       }));
     };
     reader.readAsDataURL(file);
 
-    setForm((prev) => ({ ...prev, [field]: file.name }));
+    setForm((prev) => ({ ...prev, [field]: file }));
   };
 
   const resetForm = () => {
     setForm({
-      name: '',
-      description: '',
-      mainImage: '',
-      icon: '',
-      floatTop: '',
-      floatLeft: 'nuts.png',
+      name: "",
+      description: "",
+      mainImage: null,
+      icon: null,
+      floatTop: null,
+      floatLeft: null,
     });
     setImagePreviews({});
     setEditingChikkiId(null);
@@ -97,72 +177,149 @@ export default function ChikkiAdminPanel() {
     setEditingChikkiId(-1);
   };
 
-  const startEdit = (index) => {
-    setEditingChikkiId(index);
-    setForm(chikkis[index]);
-    setImagePreviews({});
+  const startEdit = (chikki) => {
+    setEditingChikkiId(chikki._id);
+    setForm({
+      name: chikki.name || "",
+      description: chikki.description || "",
+      mainImage: chikki.mainImage || null, // full URL string
+      icon: chikki.icon || null,
+      floatTop: chikki.floatTop || null,
+      floatLeft: chikki.floatLeft || null,
+    });
+
+    // Populate image previews for existing images
+    setImagePreviews({
+      [`${chikki._id}-mainImage`]: chikki.mainImage || null,
+      [`${chikki._id}-icon`]: chikki.icon || null,
+      [`${chikki._id}-floatTop`]: chikki.floatTop || null,
+      [`${chikki._id}-floatLeft`]: chikki.floatLeft || null,
+    });
   };
 
-  const openDeleteConfirm = (index) => {
-    setDeleteConfirm({ open: true, index });
+  const openDeleteConfirm = (id) => {
+    setDeleteConfirm({ open: true, id });
   };
 
-  const confirmDelete = () => {
-    if (deleteConfirm.index !== null) {
-      setChikkis((prev) => prev.filter((_, i) => i !== deleteConfirm.index));
-      if (editingChikkiId === deleteConfirm.index) resetForm();
-      toast.success('Variant deleted successfully!');
+  const confirmDelete = async () => {
+    if (!deleteConfirm.id || !adminToken) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/variant/${deleteConfirm.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+
+      if (!res.ok) throw new Error("Delete failed");
+
+      setChikkis((prev) => prev.filter((v) => v._id !== deleteConfirm.id));
+      if (editingChikkiId === deleteConfirm.id) resetForm();
+      toast.success("Variant deleted successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete");
+    } finally {
+      setDeleteConfirm({ open: false, id: null });
     }
-    setDeleteConfirm({ open: false, index: null });
   };
 
-  const cancelDelete = () => {
-    setDeleteConfirm({ open: false, index: null });
-  };
-
-  const handleSaveChikki = (e) => {
+  const handleSaveChikki = async (e) => {
     e.preventDefault();
 
-    if (!form.name.trim()) {
-      toast.error('Variant Name is required!');
-      return;
+    if (!form.name?.trim()) return toast.error("Variant Name is required!");
+    if (!form.mainImage) return toast.error("Main Product Image is required!");
+
+    if (!adminToken) return toast.error("Admin login required");
+
+    try {
+      const fd = new FormData();
+      fd.append("name", form.name);
+      fd.append("description", form.description || "");
+
+      if (form.mainImage instanceof File)
+        fd.append("mainImage", form.mainImage);
+      if (form.icon instanceof File) fd.append("icon", form.icon);
+      if (form.floatTop instanceof File) fd.append("floatTop", form.floatTop);
+      if (form.floatLeft instanceof File)
+        fd.append("floatLeft", form.floatLeft);
+
+      let res;
+      let successMessage;
+
+      if (editingChikkiId === -1) {
+        // Create
+        res = await fetch(`${API_BASE}/variant`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${adminToken}` },
+          body: fd,
+        });
+        successMessage = "New variant created successfully!";
+      } else {
+        // Update
+        res = await fetch(`${API_BASE}/variant/${editingChikkiId}`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${adminToken}` },
+          body: fd,
+        });
+        successMessage = "Variant updated successfully!";
+      }
+
+      if (!res.ok) throw new Error("Save failed");
+
+      const saved = await res.json();
+
+      // Normalize image URLs
+      const updated = {
+        ...saved,
+        mainImage: saved.mainImage
+          ? `${BASE_URL}${saved.mainImage.startsWith("/") ? "" : "/"}${saved.mainImage}`
+          : "",
+        icon: saved.icon
+          ? `${BASE_URL}${saved.icon.startsWith("/") ? "" : "/"}${saved.icon}`
+          : "",
+        floatTop: saved.floatTop
+          ? `${BASE_URL}${saved.floatTop.startsWith("/") ? "" : "/"}${saved.floatTop}`
+          : "",
+        floatLeft: saved.floatLeft
+          ? `${BASE_URL}${saved.floatLeft.startsWith("/") ? "" : "/"}${saved.floatLeft}`
+          : "",
+      };
+
+      if (editingChikkiId === -1) {
+        setChikkis((prev) => [...prev, updated]);
+      } else {
+        setChikkis((prev) =>
+          prev.map((v) => (v._id === editingChikkiId ? updated : v)),
+        );
+      }
+
+      toast.success(successMessage);
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save variant");
     }
-
-    if (!form.mainImage.trim()) {
-      toast.error('Main Product Image is required!');
-      return;
-    }
-
-    const newChikki = { ...form };
-
-    if (editingChikkiId === -1) {
-      setChikkis((prev) => [...prev, newChikki]);
-      toast.success('New variant created successfully!');
-    } else {
-      setChikkis((prev) => {
-        const updated = [...prev];
-        updated[editingChikkiId] = newChikki;
-        return updated;
-      });
-      toast.success('Variant updated successfully!');
-    }
-
-    resetForm();
   };
 
-  const getImageUrl = (filename) => {
-    if (!filename) return null;
-    if (filename.startsWith('http') || filename.startsWith('data:')) return filename;
-    return `${IMAGE_BASE_PATH}${filename}`;
+  const getImageUrl = (value) => {
+    if (!value) return null;
+    if (typeof value === "string") return value; // already full URL after fetch
+    if (value instanceof File) return null; // preview uses data URL
+    return null;
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)]">
+        <div className="text-lg text-[var(--text-muted)]">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] py-6 px-4 sm:px-6 lg:px-8">
-      <ToastContainer position="top-right" autoClose={2000} />
-
       <div className="max-w-7xl mx-auto space-y-12">
-
-        {/* Header */}
+        {/* Header - unchanged */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-main)] tracking-tight">
@@ -181,7 +338,7 @@ export default function ChikkiAdminPanel() {
           </button>
         </div>
 
-        {/* LEFT CONTENT CARD */}
+        {/* LEFT CONTENT CARD - unchanged except save handler */}
         <div className="bg-white rounded-xl shadow-sm border border-[var(--bg-soft)] overflow-hidden">
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[var(--bg-soft)] flex justify-between items-center">
             <h2 className="text-xl font-semibold text-[var(--text-main)]">
@@ -201,7 +358,8 @@ export default function ChikkiAdminPanel() {
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">
-                  Heading <span className="text-xs">(HTML &lt;br&gt; supported)</span>
+                  Heading{" "}
+                  <span className="text-xs">(HTML &lt;br&gt; supported)</span>
                 </label>
                 <textarea
                   name="heading"
@@ -268,17 +426,19 @@ export default function ChikkiAdminPanel() {
           )}
         </div>
 
-        {/* FORM - Add / Edit Chikki */}
+        {/* FORM - Add / Edit Chikki - UI unchanged */}
         {editingChikkiId !== null && (
           <div className="bg-white rounded-xl shadow-sm border border-[var(--bg-soft)] overflow-hidden">
             <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[var(--bg-soft)]">
               <h2 className="text-xl font-semibold text-[var(--text-main)]">
-                {editingChikkiId === -1 ? 'Create New Variant' : 'Edit Variant'}
+                {editingChikkiId === -1 ? "Create New Variant" : "Edit Variant"}
               </h2>
             </div>
 
-            <form onSubmit={handleSaveChikki} className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              {/* Name */}
+            <form
+              onSubmit={handleSaveChikki}
+              className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
+            >
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">
                   Variant Name <span className="text-red-500">*</span>
@@ -293,12 +453,15 @@ export default function ChikkiAdminPanel() {
                 />
               </div>
 
-              {/* Image Fields */}
               {[
-                { key: 'mainImage', label: 'Main Product Image', required: true },
-                { key: 'icon', label: 'Tab Icon' },
-                { key: 'floatTop', label: 'Floating Top Decoration' },
-                { key: 'floatLeft', label: 'Floating Left Element' },
+                {
+                  key: "mainImage",
+                  label: "Main Product Image",
+                  required: true,
+                },
+                { key: "icon", label: "Tab Icon" },
+                { key: "floatTop", label: "Floating Top Decoration" },
+                { key: "floatLeft", label: "Floating Left Element" },
               ].map(({ key, label, required }) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">
@@ -307,19 +470,20 @@ export default function ChikkiAdminPanel() {
                   </label>
                   <div className="flex flex-col sm:flex-row items-center gap-4">
                     <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
-                      {imagePreviews[`${editingChikkiId}-${key}`] ? (
+                      {imagePreviews[previewKey(key)] ? (
                         <img
-                          src={imagePreviews[`${editingChikkiId}-${key}`]}
+                          src={imagePreviews[previewKey(key)]}
                           alt="preview"
                           className="w-full h-full object-cover"
                         />
-                      ) : form[key] ? (
+                      ) : getImageUrl(form[key]) ? (
                         <img
                           src={getImageUrl(form[key])}
-                          alt={form[key]}
+                          alt={key}
                           className="w-full h-full object-contain p-2"
                           onError={(e) => {
-                            e.target.src = 'https://via.placeholder.com/96?text=No+Image';
+                            e.target.src =
+                              "https://via.placeholder.com/96?text=No+Image";
                             e.target.onerror = null;
                           }}
                         />
@@ -337,7 +501,6 @@ export default function ChikkiAdminPanel() {
                 </div>
               ))}
 
-              {/* Description */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[var(--text-muted)] mb-1.5">
                   Short Description
@@ -352,13 +515,12 @@ export default function ChikkiAdminPanel() {
                 />
               </div>
 
-              {/* Actions */}
               <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   type="submit"
                   className="px-8 py-2.5 bg-[var(--primary)] text-white rounded-lg font-medium hover:brightness-105 transition w-full sm:w-auto"
                 >
-                  {editingChikkiId === -1 ? 'Create Variant' : 'Update Variant'}
+                  {editingChikkiId === -1 ? "Create Variant" : "Update Variant"}
                 </button>
                 <button
                   type="button"
@@ -372,22 +534,23 @@ export default function ChikkiAdminPanel() {
           </div>
         )}
 
-        {/* VARIANTS LIST */}
+        {/* VARIANTS LIST - updated key & edit handler */}
         {chikkis.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {chikkis.map((chikki, index) => (
+            {chikkis.map((chikki) => (
               <div
-                key={chikki.name + index}
+                key={chikki._id}
                 className="bg-white rounded-xl shadow-sm border border-[var(--bg-soft)] overflow-hidden hover:shadow-md transition"
               >
                 <div className="h-48 bg-gradient-to-br from-[var(--bg-soft)] to-white relative">
                   {chikki.mainImage && (
                     <img
-                      src={getImageUrl(chikki.mainImage)}
+                      src={chikki.mainImage}
                       alt={chikki.name}
                       className="absolute inset-0 w-full h-full object-contain p-6"
                       onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/180?text=Image+Not+Found';
+                        e.target.src =
+                          "https://via.placeholder.com/180?text=Image+Not+Found";
                         e.target.onerror = null;
                       }}
                     />
@@ -397,18 +560,18 @@ export default function ChikkiAdminPanel() {
                   <h3 className="font-semibold text-lg text-[var(--text-main)] mb-1">
                     {chikki.name}
                   </h3>
-                  <p className="text-sm text-[var(--text-muted)] line-clamp-2 mb-4">
-                    {chikki.description || 'No description provided'}
+                  <p className="text-sm text-[var(--text-muted)] mb-4">
+                    {chikki.description || "No description provided"}
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
-                      onClick={() => startEdit(index)}
+                      onClick={() => startEdit(chikki)}
                       className="flex-1 py-2 bg-[var(--accent)]/10 text-[var(--accent)] rounded-lg text-sm font-medium hover:bg-[var(--accent)]/20 transition"
                     >
                       Edit
                     </button>
                     <button
-                      onClick={() => openDeleteConfirm(index)}
+                      onClick={() => openDeleteConfirm(chikki._id)}
                       className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition"
                     >
                       Delete
@@ -426,26 +589,28 @@ export default function ChikkiAdminPanel() {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - updated */}
       {deleteConfirm.open && (
         <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
             className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 max-w-md w-full mx-4"
           >
             <h3 className="text-xl font-semibold text-[var(--text-main)] mb-4">
               Confirm Deletion
             </h3>
             <p className="text-[var(--text-muted)] mb-6 text-sm sm:text-base">
-              Are you sure you want to delete "{chikkis[deleteConfirm.index]?.name}"?
+              Are you sure you want to delete "
+              {chikkis.find((c) => c._id === deleteConfirm.id)?.name ||
+                "this variant"}
+              "?
               <br />
               This action cannot be undone.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-end">
               <button
-                onClick={cancelDelete}
+                onClick={() => setDeleteConfirm({ open: false, id: null })}
                 className="px-6 py-2.5 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition w-full sm:w-auto"
               >
                 Cancel

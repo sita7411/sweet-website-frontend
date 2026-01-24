@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 const API_BASE = "https://sweet-backend-nhwt.onrender.com/api/contact/";
-const BASE_URL = "https://sweet-backend-nhwt.onrender.com"; // for absolute logo URLs
+const BASE_URL = "https://sweet-backend-nhwt.onrender.com"; 
 
 const defaultContactData = {
   logo: "/logo-placeholder.png",

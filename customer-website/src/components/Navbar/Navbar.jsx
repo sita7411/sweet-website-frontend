@@ -59,7 +59,6 @@ export default function Navbar() {
 
         let fetchedLogo = data?.data?.logo;
         if (fetchedLogo && typeof fetchedLogo === "string") {
-          // Make logo URL absolute (critical fix)
           if (
             !fetchedLogo.startsWith("http") &&
             !fetchedLogo.startsWith("//")
@@ -71,12 +70,11 @@ export default function Navbar() {
         }
       } catch (err) {
         console.warn("Logo fetch failed, staying with fallback:", err);
-        // fallback is already set in state
       }
     };
 
     fetchLogo();
-  }, []); // runs once on mount
+  }, []);
 
   // Scroll effect
   useEffect(() => {
@@ -85,7 +83,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Click outside to close mobile menu
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -96,7 +93,6 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Body scroll lock
   useEffect(() => {
     document.body.style.overflow = cartOpen || mobileMenuOpen ? "hidden" : "";
     return () => {
@@ -123,7 +119,7 @@ export default function Navbar() {
             alt="Marvel Crunch"
             className="w-24 object-contain"
             onError={(e) => {
-              e.currentTarget.src = "/Logo_Marvel.png"; // fallback if loaded URL fails
+              e.currentTarget.src = "/Logo_Marvel.png";
               e.currentTarget.onerror = null;
             }}
           />

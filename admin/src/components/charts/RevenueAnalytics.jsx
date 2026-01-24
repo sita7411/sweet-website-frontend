@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function RevenueAnalytics() {
   const [range, setRange] = useState("15_days");
@@ -24,7 +25,7 @@ export default function RevenueAnalytics() {
       try {
         const days = range === "15_days" ? 15 : range === "1_month" ? 30 : 90;
         const res = await axios.get(
-          `http://localhost:5000/api/orders/admin/daily-stats?days=${days}`,
+          `${API_BASE}/api/orders/admin/daily-stats?days=${days}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
@@ -46,8 +47,9 @@ export default function RevenueAnalytics() {
           );
           const avgRevenue = totalRevenue / (res.data.data.length || 1);
 
+          // Footer previous stats
           const prevRes = await axios.get(
-            `http://localhost:5000/api/orders/admin/daily-stats?days=${days}&prev=true`,
+            `${API_BASE}/api/orders/admin/daily-stats?days=${days}&prev=true`,
             {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("adminToken")}`,

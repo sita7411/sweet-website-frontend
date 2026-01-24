@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
   AreaChart,
   Area,
@@ -8,71 +10,99 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const data = [
-  { month: "FEB", value: 12 },
-  { month: "MAR", value: 18 },
-  { month: "APR", value: 14 },
-  { month: "MAY", value: 26 },
-  { month: "JUN", value: 15 },
-  { month: "JUL", value: 20 },
-];
-
 export default function ConversionRateCard() {
+  const [stats, setStats] = useState(null);
+  const [chartData, setChartData] = useState([]);
+
+  useEffect(() => {
+    fetchConversionStats();
+  }, []);
+
+  const fetchConversionStats = async () => {
+    try {
+      const adminToken = localStorage.getItem("adminToken");
+      console.log("Admin token:", adminToken);
+
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_BASE}/api/stats/conversion`,
+        {
+          headers: { Authorization: `Bearer ${adminToken}` },
+        },
+      );
+
+      console.log("API Response:", res.data);
+
+      // ✅ directly set stats, no success check
+      setStats(res.data);
+      setChartData(res.data.chartData || []);
+    } catch (err) {
+      console.error(
+        "Failed to fetch conversion stats:",
+        err.response || err.message,
+      );
+    }
+  };
+
+  if (!stats) {
+    return (
+      <div className="p-5 max-w-sm w-full bg-[var(--bg-card)] rounded-xl shadow">
+        Loading...
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full max-w-sm " >
-      
+    <div className="relative w-full max-w-sm">
       {/* Card */}
-      <div className="
-      
-        p-5
-      ">
-        
+      <div className="p-5   ">
         {/* Header */}
         <div className="flex justify-between items-start mb-4 mt-2">
           <div>
-            <p className="text-xs uppercase tracking-wide font-semibold text-[var(text-main)]">
+            <p className="text-xs uppercase tracking-wide font-semibold text-[var(--text-main)]">
               Conversion Rate
             </p>
 
             <div className="flex items-center gap-2 mt-1">
               <h2 className="text-3xl font-semibold text-[var(--text-main)]">
-                16.9%
+                {stats.conversionRate}%
               </h2>
               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-                +2.1%
+                +{stats.changeRate}%
               </span>
             </div>
           </div>
 
-          <button className="
-            text-xs
-            px-3 py-1
-            rounded-lg
-            border border-black/10
-            text-[var(--text-muted)]
-            hover:bg-[var(--bg-soft)]
-            transition
-          ">
+          <button className="text-xs px-3 py-1 rounded-lg border border-black/10 text-[var(--text-muted)] hover:bg-[var(--bg-soft)] transition">
             Details
           </button>
         </div>
 
         {/* Stats */}
         <div className="space-y-3 mb-4 text-sm">
-          <Stat label="Added to Cart" value="3,842" change="+1.8%" positive />
-          <Stat label="Reached Checkout" value="1,256" change="-1.2%" />
-          <Stat label="Purchased" value="649" change="+2.4%" positive />
+          <Stat
+            label="Added to Cart"
+            value={stats.stats.addedToCart.value.toLocaleString("en-IN")}
+            change={`+${stats.stats.addedToCart.change}%`}
+            positive
+          />
+          <Stat
+            label="Reached Checkout"
+            value={stats.stats.reachedCheckout.value.toLocaleString("en-IN")}
+            change={`${stats.stats.reachedCheckout.change > 0 ? "+" : ""}${stats.stats.reachedCheckout.change}%`}
+            positive={stats.stats.reachedCheckout.change >= 0}
+          />
+          <Stat
+            label="Purchased"
+            value={stats.stats.purchased.value.toLocaleString("en-IN")}
+            change={`+${stats.stats.purchased.change}%`}
+            positive
+          />
         </div>
 
         {/* Chart Container */}
-        <div className="
-          bg-[var(--bg-soft)]
-          rounded-xl
-          p-3
-          border border-black/5
-        ">
+        <div className="bg-[var(--bg-soft)] rounded-xl p-3 border border-black/5">
           <ResponsiveContainer width="100%" height={150}>
-            <AreaChart data={data}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="orangeFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#f2b705" stopOpacity={0.65} />
@@ -103,10 +133,7 @@ export default function ConversionRateCard() {
                   border: "1px solid #f0e4d5",
                   boxShadow: "0 12px 25px rgba(0,0,0,0.12)",
                 }}
-                labelStyle={{
-                  fontSize: 11,
-                  color: "#8a6a52",
-                }}
+                labelStyle={{ fontSize: 11, color: "#8a6a52" }}
               />
 
               <Area
@@ -131,7 +158,9 @@ function Stat({ label, value, change, positive }) {
       <span className="text-[var(--text-muted)]">{label}</span>
       <span className="text-[var(--text-main)] font-medium">
         {value}{" "}
-        <span className={`text-xs ${positive ? "text-green-600" : "text-red-500"}`}>
+        <span
+          className={`text-xs ${positive ? "text-green-600" : "text-red-500"}`}
+        >
           {change}
         </span>
       </span>

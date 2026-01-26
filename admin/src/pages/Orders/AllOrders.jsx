@@ -10,6 +10,12 @@ import { useState, useRef, useEffect } from "react";
 import { toast, ToastContainer, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+import {
+  ShoppingCartIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  CurrencyRupeeIcon, // or BanknotesIcon
+} from "@heroicons/react/24/outline";
 
 /* ---------------- STATS -------------------- */
 const stats = [
@@ -26,7 +32,6 @@ const FILTER_OPTIONS = [
   "Processing",
   "On the Way",
   "Delivered",
-
 ];
 
 const STATUS_OPTIONS = [
@@ -35,7 +40,6 @@ const STATUS_OPTIONS = [
   "Processing",
   "On the Way",
   "Delivered",
-
 ];
 
 /* ---------------- STATUS STYLE ---------------- */
@@ -68,6 +72,8 @@ export default function AllOrdersPage() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [stats, setStats] = useState([]);
+  const [statsLoading, setStatsLoading] = useState(true);
   const pageSize = 10;
 
   const buttonRefs = useRef({});
@@ -129,6 +135,36 @@ export default function AllOrdersPage() {
       }
     };
     fetchOrders();
+  }, []);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setStatsLoading(true);
+        const token = localStorage.getItem("adminToken");
+        if (!token) throw new Error("Not authenticated");
+
+        const res = await axios.get(`${API_BASE}/api/orders/admin/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.data?.success) {
+          const formatted = res.data.stats.map((s) => ({
+            title: s.title,
+            value: s.value,
+            change: s.change,
+            positive: s.change.startsWith("+"),
+          }));
+
+          setStats(formatted);
+        }
+      } catch (err) {
+        toast.error("Failed to load stats");
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
   // Reset page when search or filter changes
@@ -220,7 +256,7 @@ export default function AllOrdersPage() {
       ? o.product.toLowerCase().includes(searchLower) ||
         o.customer.toLowerCase().includes(searchLower) ||
         o.id.replace(/#/g, "").toLowerCase().includes(searchLower) ||
-        o.status.toLowerCase().includes(searchLower) 
+        o.status.toLowerCase().includes(searchLower)
       : true;
 
     const statusMatch =
@@ -271,29 +307,114 @@ export default function AllOrdersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s, i) => (
-          <div
-            key={i}
-            className="bg-[var(--bg-card)] rounded-xl p-4 sm:p-5 shadow hover:shadow-lg transition flex flex-col justify-between"
-          >
-            <div className="flex justify-between items-center">
-              <p className="text-xs sm:text-sm uppercase text-[var(--text-muted)]">
-                {s.title}
-              </p>
-              <span
-                className={`text-sm sm:text-base font-semibold ${s.positive ? "text-green-600" : "text-red-600"}`}
-              >
-                {s.change}
-              </span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-bold mt-2 sm:mt-3">
-              {s.value}
-            </h3>
-          </div>
-        ))}
-      </div>
+      {/* Stats - circle icon + pill on top line, number & title left-aligned below */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {statsLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-[var(--bg-card)] rounded-2xl p-5 animate-pulse min-h-[130px] border border-[var(--bg-soft)]"
+              />
+            ))
+          : stats.map((s, i) => {
+              const icons = [
+                <CurrencyRupeeIcon className="w-7 h-7 text-[var(--accent)]" />,
+                <ShoppingCartIcon className="w-7 h-7 text-[var(--primary)]" />,
+                <div className="relative w-7 h-7">
+                  <CurrencyRupeeIcon className="w-7 h-7 text-[var(--accent)]" />
+                </div>,
+                <ClockIcon className="w-7 h-7 text-[var(--secondary)]" />,
+              ];
 
+              const isPositive =
+                s.change?.startsWith("+") ?? s.positive ?? false;
+
+              return (
+                <div
+                  key={i}
+                  className="
+            group relative
+            bg-[var(--bg-card)] rounded-2xl 
+            border border-[var(--bg-soft)] 
+            p-5 sm:p-6 
+            overflow-hidden 
+            transition-all duration-300
+            hover:border-[var(--primary)]/30
+            hover:shadow-[0_4px_20px_rgba(198,59,47,0.08)]
+            min-h-[130px]
+          "
+                >
+                  {/* Hover gradient */}
+                  <div
+                    className="
+              absolute inset-0 opacity-0 group-hover:opacity-40 
+              bg-gradient-to-br from-[var(--primary)]/5 via-transparent to-[var(--accent)]/5 
+              transition-opacity duration-500
+            "
+                  />
+
+                  <div className="flex flex-col gap-3">
+                    {/* Top row: icon + pill */}
+                    <div className="flex items-center gap-15">
+                      {/* Circle icon */}
+                      <div
+                        className="
+                  w-11 h-11 rounded-full 
+                  bg-gradient-to-br from-[var(--bg-soft)] to-white/70 
+                  flex items-center justify-center 
+                  shadow-sm ring-1 ring-[var(--bg-soft)]/80
+                  flex-shrink-0
+                "
+                      >
+                        {icons[i]}
+                      </div>
+
+                      {/* Change pill next to icon */}
+                      <span
+                        className={`
+                  inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full
+                  shadow-sm
+                  ${
+                    isPositive
+                      ? "bg-green-50 text-green-700 border border-green-200/70"
+                      : "bg-red-50 text-red-700 border border-red-200/70"
+                  }
+                `}
+                      >
+                        {s.change}
+                        <span className="ml-1 text-xs">
+                          {isPositive ? "↑" : "↓"}
+                        </span>
+                      </span>
+                    </div>
+
+                    {/* Left-aligned number + title */}
+                    <div className="pl]">
+                      {" "}
+                      {/* indent to align under icon */}
+                      <h3
+                        className="
+                  text-2xl sm:text-3xl font-bold 
+                  text-[var(--text-main)] 
+                  leading-tight mb-1
+                "
+                      >
+                        {s.value}
+                      </h3>
+                      <p
+                        className="
+                  text-sm font-medium text-[var(--text-muted)] 
+                  truncate
+                "
+                      >
+                        {s.title}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+      </div>
       {/* Main Table Container */}
       <div className="bg-[var(--bg-card)] rounded-xl shadow overflow-hidden">
         {/* Search + Filter + Export */}

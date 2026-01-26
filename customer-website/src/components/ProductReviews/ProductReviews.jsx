@@ -108,7 +108,7 @@ export default function ReviewSection({ productId }) {
 
       // Attach all selected files
       formData.photo.forEach((file) => {
-        formPayload.append("images", file); // ← field name must match multer .array("images")
+        formPayload.append("images", file); 
       });
 
       const res = await axios.post(`${API_BASE}/api/reviews`, formPayload, {
@@ -128,7 +128,6 @@ export default function ReviewSection({ productId }) {
           comment: formData.details.trim(),
           createdAt: new Date().toISOString(),
           images: formData.photo.map((file) => URL.createObjectURL(file)),
-          // isVerifiedPurchase: res.data.review?.isVerifiedPurchase || false,
         };
 
         setReviews([newReview, ...reviews]);

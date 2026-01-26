@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BellIcon,
   MagnifyingGlassIcon,
@@ -11,30 +11,97 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../context/AdminAuthContext";
+import io from "socket.io-client";
 
 export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
   const { admin, loading, logout } = useAdminAuth();
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
 
-  const notifications = [
-    { id: 1, text: "New order placed (#2451)", time: "2m", unread: true },
-    { id: 2, text: "Stock low: Chocolate Chikki", time: "12m", unread: true },
-    { id: 3, text: "Payment settled successfully", time: "1h", unread: false },
-  ];
+  const token = localStorage.getItem("adminToken")?.trim();
+  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
-  const unread = notifications.filter((n) => n.unread).length;
+  // ─── FETCH NOTIFICATIONS ───
+  const fetchNotifications = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/notifications?recipient=admin&limit=5`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      } else {
+        console.error("Failed to fetch notifications:", res.status);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
+
+  // ─── SOCKET.IO REAL-TIME ───
+  useEffect(() => {
+    if (!token) return;
+
+    fetchNotifications(); // initial fetch
+
+    const socket = io(API_BASE, {
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+
+    socket.on("connect", () => {
+      console.log("🟢 Socket connected → ID:", socket.id);
+      socket.emit("joinNotifications", "admin");
+    });
+
+    socket.on("notification", (newNotif) => {
+      console.log("🔔 Realtime notification received:", newNotif);
+      setNotifications((prev) => [newNotif, ...prev]);
+    });
+
+    socket.on("disconnect", (reason) =>
+      console.log("Socket disconnected:", reason),
+    );
+
+    return () => socket.disconnect();
+  }, [token, API_BASE]);
+
+  const unread = notifications.filter((n) => !n.isRead).length;
 
   const getInitials = (name = "", email = "") => {
     if (name) {
       const parts = name.split(" ");
       return (parts[0]?.[0] + (parts[1]?.[0] || ""))?.toUpperCase() || "AD";
     }
-    if (email) {
-      return email[0]?.toUpperCase() || "AD";
-    }
+    if (email) return email[0]?.toUpperCase() || "AD";
     return "AD";
+  };
+
+  // ─── MARK NOTIFICATION AS READ ───
+  const handleMarkRead = async (id) => {
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/notifications/${id}/read?recipient=admin`,
+        {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (res.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
+        );
+      }
+    } catch (err) {
+      console.error("Mark read error:", err);
+    }
   };
 
   const handleLogout = async () => {
@@ -48,8 +115,7 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
       <header
         className={`fixed top-0 z-40 h-20 transition-all
           left-0 right-0 w-full
-          ${isSidebarOpen ? "lg:left-64 lg:w-[calc(100%-16rem)]" : "lg:left-0 lg:w-full"}
-        `}
+          ${isSidebarOpen ? "lg:left-64 lg:w-[calc(100%-16rem)]" : "lg:left-0 lg:w-full"}`}
       >
         <div className="h-20 bg-[#fffaf3] backdrop-blur-xl border border-[var(--secondary)]/10 shadow-lg px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -69,11 +135,9 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
     <header
       className={`fixed top-0 z-40 h-20 transition-all
         left-0 right-0 w-full
-        ${isSidebarOpen ? "lg:left-64 lg:w-[calc(100%-16rem)]" : "lg:left-0 lg:w-full"}
-      `}
+        ${isSidebarOpen ? "lg:left-64 lg:w-[calc(100%-16rem)]" : "lg:left-0 lg:w-full"}`}
     >
       <div className="h-20 bg-[#fffaf3] backdrop-blur-xl border border-[var(--secondary)]/10 shadow-lg px-4 flex items-center justify-between">
-
         {/* LEFT: Hamburger + Search */}
         <div className="flex items-center gap-4">
           <button
@@ -97,7 +161,6 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
 
         {/* RIGHT: Notifications & Profile */}
         <div className="flex items-center gap-4">
-
           {/* NOTIFICATIONS */}
           <div className="relative">
             <button
@@ -133,15 +196,44 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
                     </span>
                   </div>
 
-                  {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`px-5 py-3 hover:bg-[var(--bg-soft)] transition ${n.unread ? "bg-[var(--primary)]/10" : ""}`}
+                  {notifications.length > 0 ? (
+                    notifications.map((n) => (
+                      <div
+                        key={n._id || n.id}
+                        onClick={() => handleMarkRead(n._id)}
+                        className={`px-5 py-3 hover:bg-[var(--bg-soft)] transition cursor-pointer ${
+                          !n.isRead ? "bg-[var(--primary)]/10" : ""
+                        }`}
+                      >
+                        <p className="text-sm font-medium">
+                          {n.title || n.text}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                          {n.createdAt
+                            ? new Date(n.createdAt).toLocaleString("en-IN", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })
+                            : n.time}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="px-5 py-3 text-sm text-[var(--text-muted)]">
+                      No notifications
+                    </p>
+                  )}
+
+                  {/* VIEW ALL LINK */}
+                  {notifications.length > 0 && (
+                    <Link
+                      to="/admin/notifications"
+                      className="block px-5 py-3 text-center text-sm font-medium text-[var(--primary)] hover:bg-[var(--bg-soft)] border-t border-[var(--secondary)]/10 transition"
+                      onClick={() => setNotifOpen(false)}
                     >
-                      <p className="text-sm font-medium">{n.text}</p>
-                      <p className="text-xs text-[var(--text-muted)] mt-0.5">{n.time} ago</p>
-                    </div>
-                  ))}
+                      View All Notifications
+                    </Link>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -161,7 +253,7 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
               </div>
               <div className="hidden sm:block text-left">
                 <p className="text-sm font-semibold leading-4">
-                  {admin ? (admin.name || admin.email.split("@")[0]) : "Admin"}
+                  {admin ? admin.name || admin.email.split("@")[0] : "Admin"}
                 </p>
                 <p className="text-xs text-[var(--text-muted)]">
                   {admin?.email || "admin@gmail.com"}
@@ -180,7 +272,9 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
                 >
                   <div className="p-5 bg-gradient-to-br from-[var(--primary)]/15 to-[var(--accent)]/20">
                     <p className="font-semibold">
-                      {admin ? (admin.name || admin.email.split("@")[0]) : "Admin"}
+                      {admin
+                        ? admin.name || admin.email.split("@")[0]
+                        : "Admin"}
                     </p>
                     <p className="text-sm text-[var(--text-muted)]">
                       {admin?.email || "admin@marvelcrunch.com"}
@@ -212,12 +306,12 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
 
                     <li className="mt-2 border-t border-[var(--secondary)]/10">
                       <Link
-                        to="/admin/login"  
+                        to="/admin/login"
                         onClick={async (e) => {
-                          e.preventDefault();           
-                          await logout();               
+                          e.preventDefault();
+                          await logout();
                           setProfileOpen(false);
-                          navigate("/login");    
+                          navigate("/login");
                         }}
                         className="px-5 py-3 text-red-600 hover:bg-red-50 flex items-center gap-3 cursor-pointer"
                       >

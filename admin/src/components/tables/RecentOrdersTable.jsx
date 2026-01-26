@@ -35,7 +35,7 @@ export default function RecentOrders() {
       const data = await res.json();
 
       if (data.success) {
-        setOrders(data.data.slice(0, 9));
+        setOrders(data.data.slice(0, 12));
       }
     } catch (err) {
       console.error("Failed to load orders:", err);

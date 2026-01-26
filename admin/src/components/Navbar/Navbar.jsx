@@ -152,6 +152,13 @@ export default function AdminNavbar({ isSidebarOpen, setIsSidebarOpen }) {
             <input
               placeholder="Search dashboard..."
               className="bg-transparent text-sm outline-none w-64 text-[var(--text-main)]"
+              onKeyDown={(e) => {
+  if (e.key === "Enter" && searchQuery.trim()) {
+    navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+    setSearchQuery("");
+  }
+}}
+
             />
             <span className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--accent)]/20 text-[var(--secondary)]">
               ⌘K

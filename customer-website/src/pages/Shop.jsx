@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { ToastContainer, toast, Slide } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useSearchParams } from "react-router-dom";
 
 // ────────────────────────────────────────────────
 // CONFIG
@@ -35,6 +36,7 @@ export default function ProductPage() {
   const [sortBy, setSortBy] = useState("Default sorting");
   const [currentPage, setCurrentPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+const [searchParams] = useSearchParams();
 
   // Fallback categories
   const fallbackCategories = [
@@ -82,6 +84,13 @@ export default function ProductPage() {
     }
     fetchProducts();
   }, []);
+useEffect(() => {
+  const urlSearch = searchParams.get("search");
+  if (urlSearch) {
+    setSearchTerm(urlSearch);
+    setCurrentPage(1);
+  }
+}, [searchParams]);
 
   const formatPrice = (num) => "₹" + (num || 0).toLocaleString("en-IN");
 

@@ -15,6 +15,7 @@ import {
   Truck,
   ShieldCheck,
   Clock,
+  SearchIcon,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useShop } from "../../context/ShopContext";
@@ -39,24 +40,19 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [logoUrl, setLogoUrl] = useState("/Logo_Marvel.png");
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
+  // Fetch logo
   useEffect(() => {
     const fetchLogo = async () => {
       try {
-        const res = await fetch(API_LOGO, {
-          method: "GET",
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch logo: ${res.status}`);
-        }
-
+        const res = await fetch(API_LOGO);
+        if (!res.ok) throw new Error(`Failed: ${res.status}`);
         const data = await res.json();
-
         let fetchedLogo = data?.data?.logo;
         if (fetchedLogo && typeof fetchedLogo === "string") {
           if (
@@ -65,15 +61,32 @@ export default function Navbar() {
           ) {
             fetchedLogo = `${BACKEND_BASE}${fetchedLogo.startsWith("/") ? "" : "/"}${fetchedLogo}`;
           }
-
           setLogoUrl(fetchedLogo);
         }
       } catch (err) {
-        console.warn("Logo fetch failed, staying with fallback:", err);
+        console.warn("Logo fetch failed:", err);
       }
     };
-
     fetchLogo();
+  }, []);
+
+  // Fetch search suggestions
+  useEffect(() => {
+    async function fetchSuggestions() {
+      try {
+        const res = await fetch(`${BACKEND_BASE}/api/products`);
+        const data = await res.json();
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+        setSuggestions(list);
+      } catch (err) {
+        console.warn("Search suggestions fetch failed");
+      }
+    }
+    fetchSuggestions();
   }, []);
 
   // Scroll effect
@@ -83,6 +96,7 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Click outside for mobile menu
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -93,6 +107,7 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Prevent scroll when menu/cart open
   useEffect(() => {
     document.body.style.overflow = cartOpen || mobileMenuOpen ? "hidden" : "";
     return () => {
@@ -103,6 +118,15 @@ export default function Navbar() {
   const cartSubtotal = getCartTotal?.() ?? 0;
   const wishlistCount = wishlistItems?.length ?? 0;
 
+  const filteredSuggestions =
+    searchQuery.trim().length < 2
+      ? []
+      : suggestions
+          .filter((p) =>
+            p.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
+          .slice(0, 5);
+
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -112,7 +136,7 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 h-[90px] flex items-center justify-between">
-        {/* Logo – now correctly absolute */}
+        {/* Logo */}
         <Link to="/" className="flex items-center">
           <img
             src={logoUrl}
@@ -135,7 +159,36 @@ export default function Navbar() {
             <input
               placeholder="Search chikki, peanuts, gifts..."
               className="w-full pl-11 pr-5 py-3 rounded-full bg-[var(--bg-soft)] focus:ring-2 focus:ring-[var(--primary)] outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && searchQuery.trim()) {
+                  navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+                  setSearchQuery("");
+                }
+              }}
             />
+            {/* Desktop Search Suggestions */}
+            {filteredSuggestions.length > 0 && (
+              <div className="absolute top-full mt-2 w-full bg-white rounded-2xl shadow-xl border overflow-hidden z-50">
+                {filteredSuggestions.map((item) => (
+                  <button
+                    key={item._id}
+                    onClick={() => {
+                      navigate(`/product/${item._id}`);
+                      setSearchQuery("");
+                    }}
+                    className="w-full flex items-center gap-3 px-5 py-3 text-sm hover:bg-[var(--bg-soft)] transition"
+                  >
+                    <SearchIcon
+                      size={16}
+                      className="text-[var(--primary)] flex-shrink-0"
+                    />
+                    <span>{item.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -262,10 +315,40 @@ export default function Navbar() {
             type="text"
             placeholder="Search chikki, peanuts, gifts..."
             className="w-full pl-11 pr-4 py-3 rounded-full bg-[var(--bg-soft)] focus:ring-2 focus:ring-[var(--primary)] outline-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchQuery.trim()) {
+                setMobileMenuOpen(false);
+                navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+                setSearchQuery("");
+              }
+            }}
           />
+          {/* Mobile Search Suggestions */}
+          {filteredSuggestions.length > 0 && (
+            <div className="absolute top-full mt-2 w-full bg-white rounded-2xl shadow-xl border overflow-hidden z-50">
+              {filteredSuggestions.map((item) => (
+                <button
+                  key={item._id}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    navigate(`/product/${item._id}`);
+                    setSearchQuery("");
+                  }}
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm hover:bg-[var(--bg-soft)] transition"
+                >
+                  <SearchIcon
+                    size={16}
+                    className="text-[var(--primary)] flex-shrink-0"
+                  />
+                  <span>{item.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
       {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (

@@ -11,20 +11,19 @@ import StatsSection from "../components/StatsSection/StatsSection";
 import SubscribeSection from "../components/SubscribeSection/SubscribeSection";
 
 const Home = () => {
-    return (
-        <div>
-         
-            <Herosection />
-            <FeaturesSection />
-            <PopularItems />
-            <AboutUs />
-            <BestsellerSection />
-            <OfferSection />
-            <TestimonialsSection />
-            <StatsSection />
-            <SubscribeSection />
-        </div >
-    );
+  return (
+    <div>
+      <Herosection />
+      <FeaturesSection />
+      <PopularItems />
+      <AboutUs />
+      <BestsellerSection />
+      <OfferSection />
+      <TestimonialsSection />
+       <StatsSection />
+      <SubscribeSection />
+    </div>
+  );
 };
 
 export default Home;

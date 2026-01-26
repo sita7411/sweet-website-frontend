@@ -108,7 +108,7 @@ export default function ReviewSection({ productId }) {
 
       // Attach all selected files
       formData.photo.forEach((file) => {
-        formPayload.append("images", file); 
+        formPayload.append("images", file);
       });
 
       const res = await axios.post(`${API_BASE}/api/reviews`, formPayload, {

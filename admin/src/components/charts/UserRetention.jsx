@@ -89,7 +89,7 @@ const UserRetention = () => {
         </div>
       </div>
 
-   {/* MONTHS */}
+      {/* MONTHS */}
       <div
         className="flex gap-[4px] md:gap-[3px] pl-[56px] text-[9px] -ml-3 mt-2 flex-wrap"
         style={{ color: "var(--text-muted)" }}
@@ -169,8 +169,6 @@ const UserRetention = () => {
           <span style={{ color: "var(--text-muted)" }}>Below 25%</span>
         </div>
       </div>
-
- 
 
       {/* FOOTER */}
       <p className="text-[9px] mt-2" style={{ color: "var(--text-muted)" }}>

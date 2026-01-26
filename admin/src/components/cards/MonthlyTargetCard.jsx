@@ -6,6 +6,7 @@ const MonthlyTargetCard = () => {
   const [revenue, setRevenue] = useState(0);
   const [percentage, setPercentage] = useState(0);
   const [editingTarget, setEditingTarget] = useState(false);
+  const [tempTargetValue, setTempTargetValue] = useState("");
   const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef(null);
 
@@ -15,36 +16,51 @@ const MonthlyTargetCard = () => {
   const circumference = Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
 
-  // Fetch revenue from API
+  // Fetch both revenue and target
   useEffect(() => {
-    const fetchRevenue = async () => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+
       try {
-        const token = localStorage.getItem("adminToken");
-        const res = await axios.get(
+        // 1. Fetch revenue (existing)
+        const revRes = await axios.get(
           `${import.meta.env.VITE_API_BASE}/api/stats/monthly-revenue`,
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           },
         );
-        const revenueValue = res.data.data?.revenue || 0;
-        setRevenue(revenueValue);
+        setRevenue(revRes.data.data?.revenue || 0);
+
+        // 2. Fetch target (new)
+        const targetRes = await axios.get(
+          `${import.meta.env.VITE_API_BASE}/api/stats/monthly-target`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        const fetchedTarget = targetRes.data.data?.target || 0;
+        setTarget(fetchedTarget);
+        setTempTargetValue(fetchedTarget > 0 ? fetchedTarget.toString() : "");
       } catch (err) {
-        console.error("Failed to fetch revenue:", err);
+        console.error("Failed to load monthly data:", err);
       }
     };
-    fetchRevenue();
+
+    fetchData();
   }, []);
 
-  // Calculate percentage whenever target or revenue changes
+  // Recalculate percentage
   useEffect(() => {
     if (target > 0) {
-      setPercentage(Math.min(Math.round((revenue / target) * 100), 100));
+      const prog = (revenue / target) * 100;
+      setPercentage(Math.min(Math.round(prog), 100));
+    } else {
+      setPercentage(0);
     }
   }, [target, revenue]);
 
-  // Close menu if clicked outside
+  // Click outside to close menu
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -57,24 +73,67 @@ const MonthlyTargetCard = () => {
 
   const toggleMenu = () => setOpenMenu(!openMenu);
 
-  const handleTargetSave = (e) => {
+  const handleTargetSave = async (e) => {
     e.preventDefault();
-    const value = parseInt(e.target.targetValue.value.replace(/\D/g, ""));
-    if (!isNaN(value)) {
-      setTarget(value);
+
+    const raw = tempTargetValue.replace(/\D/g, "");
+    const newValue = parseInt(raw, 10);
+
+    if (isNaN(newValue) || newValue <= 0) {
+      alert("Please enter a valid positive number");
+      return;
     }
-    setEditingTarget(false);
+
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      alert("Authentication required");
+      return;
+    }
+
+    try {
+      // Optimistic update
+      setTarget(newValue);
+
+      await axios.put(
+        `${import.meta.env.VITE_API_BASE}/api/stats/monthly-target`,
+        { targetAmount: newValue },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
+      setEditingTarget(false);
+      // You can show toast/success message here if you have one
+    } catch (err) {
+      console.error("Failed to save target:", err);
+      alert("Failed to save target. Please try again.");
+      // Rollback optimistic update if needed
+      // setTarget(previousTarget); // you can store previous if you want
+    }
   };
 
-  const handleReset = () => {
-    setTarget(0);
-    setEditingTarget(false);
-    setOpenMenu(false);
+  const handleReset = async () => {
+    if (!window.confirm("Reset monthly target to 0?")) return;
+
+    const token = localStorage.getItem("adminToken");
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_API_BASE}/api/stats/monthly-target`,
+        { targetAmount: 0 },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setTarget(0);
+      setTempTargetValue("");
+      setOpenMenu(false);
+    } catch (err) {
+      alert("Failed to reset target");
+      console.error(err);
+    }
   };
 
   const handleViewDetails = () => {
     alert(
-      `Target: ₹${target.toLocaleString()}\nRevenue: ₹${revenue.toLocaleString()}\nProgress: ${percentage}%`,
+      `Target: ₹${target.toLocaleString("en-IN")}\nRevenue: ₹${revenue.toLocaleString("en-IN")}\nProgress: ${percentage}%`,
     );
     setOpenMenu(false);
   };
@@ -87,7 +146,6 @@ const MonthlyTargetCard = () => {
           Monthly Target
         </h2>
 
-        {/* Menu */}
         <div className="relative" ref={menuRef}>
           <span
             className="text-[#8a6a52] text-lg cursor-pointer select-none"
@@ -126,7 +184,7 @@ const MonthlyTargetCard = () => {
         </div>
       </div>
 
-      {/* Chart */}
+      {/* Chart - semi circle */}
       <div className="relative h-28 sm:h-32 md:h-36 mb-4 sm:mb-5">
         <svg
           width={size}
@@ -157,15 +215,15 @@ const MonthlyTargetCard = () => {
             {percentage}%
           </div>
           <div className="text-[10px] sm:text-[11px] text-green-600 mt-0.5">
-            +{revenue > 0 ? `₹${revenue.toLocaleString()}` : "-"}
+            {revenue > 0 ? `₹${revenue.toLocaleString("en-IN")}` : "-"}
           </div>
         </div>
       </div>
 
-      {/* Message */}
+      {/* Message - can be made dynamic later */}
       <div className="text-center mb-4 sm:mb-5 -mt-10 sm:-mt-14">
         <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
-          Great Progress 🎉
+          {percentage >= 75 ? "Great Progress! 🎉" : "Keep Going!"}
         </p>
         <p className="text-xs sm:text-sm text-[#8a6a52] mt-1">
           Almost reaching your goal
@@ -176,20 +234,30 @@ const MonthlyTargetCard = () => {
       <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center mb-3 sm:mb-4">
         <div className="bg-[#fff1db] rounded-lg py-2 sm:py-3">
           <p className="text-[10px] sm:text-[11px] text-[#8a6a52]">Target</p>
+
           {editingTarget ? (
-            <form onSubmit={handleTargetSave} className="flex justify-center">
+            <form
+              onSubmit={handleTargetSave}
+              className="flex justify-center items-center gap-2"
+            >
               <input
-                name="targetValue"
                 type="text"
-                defaultValue={target > 0 ? `₹${target.toLocaleString()}` : ""}
-                className="w-20 text-sm sm:text-base font-semibold text-[#3a2416] text-center border-b border-[#c63b2f] focus:outline-none"
+                value={tempTargetValue}
+                onChange={(e) => setTempTargetValue(e.target.value)}
+                className="w-24 text-sm sm:text-base font-semibold text-[#3a2416] text-center border-b border-[#c63b2f] focus:outline-none bg-transparent"
+                placeholder="₹50,000"
                 autoFocus
-                onBlur={() => setEditingTarget(false)}
               />
+              <button
+                type="submit"
+                className="text-green-600 text-xs font-medium hover:underline"
+              >
+                Save
+              </button>
             </form>
           ) : (
             <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
-              {target > 0 ? `₹${target.toLocaleString()}` : "-"}
+              {target > 0 ? `₹${target.toLocaleString("en-IN")}` : "Not set"}
             </p>
           )}
         </div>
@@ -197,7 +265,7 @@ const MonthlyTargetCard = () => {
         <div className="bg-white rounded-lg py-2 sm:py-3 shadow-sm">
           <p className="text-[10px] sm:text-[11px] text-[#8a6a52]">Revenue</p>
           <p className="text-sm sm:text-base font-semibold text-[#3a2416]">
-            ₹{revenue.toLocaleString()}
+            ₹{revenue.toLocaleString("en-IN")}
           </p>
         </div>
       </div>
@@ -206,7 +274,7 @@ const MonthlyTargetCard = () => {
       <div className="text-center text-[10px] sm:text-[11px] text-[#8a6a52]">
         Keep pushing! You're{" "}
         <span className="font-semibold text-[#3a2416]">
-          {target > 0 ? 100 - percentage : 0}%
+          {target > 0 ? `${100 - percentage}%` : "—"}
         </span>{" "}
         away from your goal.
       </div>

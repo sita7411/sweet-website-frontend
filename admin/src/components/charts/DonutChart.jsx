@@ -1,12 +1,6 @@
+import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell } from "recharts";
 import { TrendingUp, Crown, Activity } from "lucide-react";
-
-const data = [
-  { name: "Peanut Chikki", value: 38 },
-  { name: "Pista Chikki", value: 27 },
-  { name: "Chocolate", value: 22 },
-  { name: "Dryfruit", value: 13 },
-];
 
 const COLORS = [
   "var(--primary)",
@@ -16,9 +10,89 @@ const COLORS = [
 ];
 
 export default function TopProducts() {
-  return (
-<div className="bg-[var(--bg-card)] rounded-xl shadow p-5 w-full bg-[var(--bg-main)] max-w-[550px] mx-auto">
+  const [data, setData] = useState([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [revenueChange, setRevenueChange] = useState("0");
+  const [bestSeller, setBestSeller] = useState("—");
+  const [avgOrderValue, setAvgOrderValue] = useState(540); // fallback
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      try {
+        setLoading(true);
+
+        const token = localStorage.getItem("adminToken");
+        if (!token) {
+          console.warn("No admin token found");
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE}/api/stats/overview`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch");
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Top products array (now directly from result.data)
+          setData(result.data || []);
+
+          // All other stats are nested under overview
+          const overview = result.overview || {};
+
+          setTotalRevenue(Math.round(overview.revenue?.thisMonth || 0));
+
+          // Revenue change (format to 1 decimal if needed)
+          setRevenueChange(overview.revenue?.change?.toFixed(1) || "0");
+
+          setBestSeller(overview.bestSellerThisMonth || "—");
+
+          setAvgOrderValue(overview.avgOrderValue?.value || 540);
+        }
+      } catch (err) {
+        console.error("Top products fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTopProducts();
+  }, []);
+
+  // Format number → 32450 → 32,450
+  const formatCurrency = (num) => {
+    return num.toLocaleString("en-IN");
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-[var(--bg-card)] rounded-xl shadow p-5 w-full bg-[var(--bg-main)] max-w-[550px] mx-auto text-center py-10 text-gray-500">
+        Loading...
+      </div>
+    );
+  }
+
+  // Fallback if no data
+  if (data.length === 0) {
+    return (
+      <div className="bg-[var(--bg-card)] rounded-xl shadow p-5 w-full bg-[var(--bg-main)] max-w-[550px] mx-auto text-center py-10 text-gray-500">
+        No data available this month
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[var(--bg-card)] rounded-xl shadow p-5 w-full bg-[var(--bg-main)] max-w-[550px] mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-3">
         <div>
@@ -27,9 +101,11 @@ export default function TopProducts() {
           </h3>
           <p className="text-xs text-gray-400">This Month</p>
         </div>
-        <span className="flex items-center gap-1 text-xs text-green-600">
-          <TrendingUp size={14} />
-          14%
+        <span
+          className={`flex items-center gap-1 text-xs ${Number(revenueChange) >= 0 ? "text-green-600" : "text-red-600"}`}
+        >
+          <TrendingUp size={14} />{" "}
+          {revenueChange}%
         </span>
       </div>
 
@@ -47,7 +123,7 @@ export default function TopProducts() {
             endAngle={-270}
           >
             {data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i]} />
+              <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
         </PieChart>
@@ -56,10 +132,14 @@ export default function TopProducts() {
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <p className="text-xs text-gray-400">Revenue</p>
           <p className="text-xl font-bold text-[var(--text-main)]">
-            ₹32,450
+            ₹{formatCurrency(totalRevenue)}
           </p>
           <p className="text-[11px] text-green-600 mt-0.5">
             +9.3%
+            {/* 
+              ↑ You can replace this static +9.3% with another dynamic value 
+              from API if you add centerChange field later
+            */}
           </p>
         </div>
       </div>
@@ -74,7 +154,7 @@ export default function TopProducts() {
           Best Seller
         </div>
         <span className="text-xs font-semibold text-[var(--text-main)]">
-          Peanut Chikki
+          {bestSeller}
         </span>
       </div>
 
@@ -85,7 +165,7 @@ export default function TopProducts() {
             <span className="flex items-center gap-2 mb-1 text-[var(--text-muted)]">
               <span
                 className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: COLORS[index] }}
+                style={{ backgroundColor: COLORS[index % COLORS.length] }}
               />
               {item.name}
             </span>
@@ -103,10 +183,9 @@ export default function TopProducts() {
           Avg Order Value
         </span>
         <span className="font-semibold text-[var(--text-main)]">
-          ₹540
+          ₹{formatCurrency(avgOrderValue)}
         </span>
       </div>
-
     </div>
   );
 }

@@ -1,60 +1,128 @@
 // src/components/RecentOrders.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 
-const orders = [
-  { id: "#CH10234", customer: "Amaya Weller", product: "Almond Chikki", qty: 2, total: "₹400", status: "Shipped" },
-  { id: "#CH10235", customer: "Sebastian Adams", product: "Peanut Chikki", qty: 1, total: "₹150", status: "Processing" },
-  { id: "#CH10236", customer: "Suzanne Bright", product: "Cashew Chikki", qty: 1, total: "₹250", status: "Delivered" },
-  { id: "#CH10237", customer: "Peter Howl", product: "Mixed Nuts Chikki", qty: 1, total: "₹300", status: "Pending" },
-  { id: "#CH10238", customer: "Anita Singh", product: "Pista Chikki", qty: 3, total: "₹900", status: "Shipped" },
-];
-
-// Status colors (using theme colors)
 const statusColors = {
-  Shipped: "bg-yellow-100 text-yellow-800",
-  Processing: "bg-orange-100 text-orange-800",
-  Delivered: "bg-green-100 text-green-800",
-  Pending: "bg-red-100 text-red-800",
+  pending: "bg-red-100 text-red-800",
+  placed: "bg-blue-100 text-blue-800",
+  accepted: "bg-indigo-100 text-indigo-800",
+  processing: "bg-orange-100 text-orange-800",
+  shipped: "bg-yellow-100 text-yellow-800",
+  delivered: "bg-green-100 text-green-800",
 };
 
 export default function RecentOrders() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const token = localStorage.getItem("adminToken");
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE}/api/orders/admin/all`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        setOrders(data.data.slice(0, 9));
+      }
+    } catch (err) {
+      console.error("Failed to load orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-4 text-sm">Loading orders...</div>;
+  }
+
   return (
-    <div className="">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-[var(--text-main)]">Recent Orders</h2>
-      </div>
+    <div>
+      <h2 className="text-base font-semibold mb-3 text-[var(--text-main)]">
+        Recent Orders
+      </h2>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-[var(--bg-soft)]">
+        <table className="min-w-full divide-y divide-[var(--bg-soft)] text-xs">
           <thead className="bg-[var(--bg-soft)]">
             <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium text-[var(--text-muted)]">No</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-[var(--text-muted)]">Order ID</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-[var(--text-muted)]">Customer</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-[var(--text-muted)]">Product</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-[var(--text-muted)]">Qty</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-[var(--text-muted)]">Total</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-[var(--text-muted)]">Status</th>
+              <th className="px-3 py-2 text-left font-medium">No</th>
+              <th className="px-3 py-2 text-left font-medium">Order ID</th>
+              <th className="px-3 py-2 text-left font-medium">Customer</th>
+              <th className="px-3 py-2 text-left font-medium">Product</th>
+              <th className="px-3 py-2 text-left font-medium">Qty</th>
+              <th className="px-3 py-2 text-left font-medium">Total</th>
+              <th className="px-3 py-2 text-left font-medium">Status</th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-[var(--bg-soft)]">
-            {orders.map((order, index) => (
-              <tr key={order.id} className="hover:bg-[var(--bg-soft)] transition-colors duration-200">
-                <td className="px-4 py-2 text-sm text-[var(--text-main)]">{index + 1}</td>
-                <td className="px-4 py-2 text-sm text-[var(--text-main)]">{order.id}</td>
-                <td className="px-4 py-2 text-sm text-[var(--text-main)]">{order.customer}</td>
-                <td className="px-4 py-2 text-sm text-[var(--text-main)]">{order.product}</td>
-                <td className="px-4 py-2 text-sm text-[var(--text-main)]">{order.qty}</td>
-                <td className="px-4 py-2 text-sm text-[var(--text-main)]">{order.total}</td>
-                <td className="px-4 py-2">
-                  <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[order.status]}`}
-                  >
-                    {order.status}
-                  </span>
+            {orders.map((order, index) => {
+              const firstItem = order.items?.[0];
+              const customer =
+                `${order.billingDetails?.firstName || ""} ${
+                  order.billingDetails?.lastName || ""
+                }`.trim() || "Guest";
+
+              return (
+                <tr
+                  key={order._id}
+                  className="hover:bg-[var(--bg-soft)] transition"
+                >
+                  <td className="px-3 py-2">{index + 1}</td>
+
+                  <td className="px-3 py-2 font-medium">
+                    ORD-{order._id.slice(-6).toUpperCase()}
+                  </td>
+
+                  <td className="px-3 py-2">{customer}</td>
+
+                  <td className="px-3 py-2">
+                    {firstItem?.name || "Multiple items"}
+                  </td>
+
+                  <td className="px-3 py-2">
+                    {order.items?.reduce((sum, i) => sum + i.qty, 0)}
+                  </td>
+
+                  <td className="px-3 py-2">₹{order.totalAmount}</td>
+
+                  <td className="px-3 py-2">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold  whitespace-nowrap ${
+                        statusColors[order.orderStatus] ||
+                        "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {order.orderStatus}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {orders.length === 0 && (
+              <tr>
+                <td
+                  colSpan="7"
+                  className="text-center py-4 text-gray-500 text-sm"
+                >
+                  No orders found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

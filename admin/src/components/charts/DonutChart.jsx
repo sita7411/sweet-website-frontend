@@ -104,8 +104,7 @@ export default function TopProducts() {
         <span
           className={`flex items-center gap-1 text-xs ${Number(revenueChange) >= 0 ? "text-green-600" : "text-red-600"}`}
         >
-          <TrendingUp size={14} />{" "}
-          {revenueChange}%
+          <TrendingUp size={14} /> {revenueChange}%
         </span>
       </div>
 
@@ -159,7 +158,7 @@ export default function TopProducts() {
       </div>
 
       {/* Legend */}
-      <div className="space-y-2 text-xs mb-4">
+      <div className="space-y-2 text-[10px]  mb-4">
         {data.map((item, index) => (
           <div key={index} className="flex justify-between">
             <span className="flex items-center gap-2 mb-1 text-[var(--text-muted)]">
